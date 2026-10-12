@@ -1,0 +1,21 @@
+timestamp,user,ip,event_type,status,country
+2026-10-07 10:00:00,alice,192.168.1.10,login,success,India
+2026-10-07 10:01:00,bob,192.168.1.20,login,failed,India
+2026-10-07 10:02:00,bob,192.168.1.20,login,failed,India
+2026-10-07 10:03:00,bob,192.168.1.20,login,failed,India
+2026-10-07 10:04:00,bob,192.168.1.20,login,failed,India
+2026-10-07 10:05:00,bob,192.168.1.20,login,success,India
+2026-10-07 10:06:00,charlie,192.168.1.30,login,success,India
+2026-10-07 10:07:00,david,10.0.0.99,login,failed,Germany
+2026-10-07 10:07:15,david,10.0.0.99,login,failed,Germany
+2026-10-07 10:07:30,david,10.0.0.99,login,failed,Germany
+2026-10-07 10:07:45,david,10.0.0.99,login,failed,Germany
+2026-10-07 10:08:00,david,10.0.0.99,login,failed,Germany
+2026-10-07 10:08:15,david,10.0.0.99,login,failed,Germany
+2026-10-07 10:10:00,eve,172.16.0.45,login,success,United States
+2026-10-07 11:15:00,eve,172.16.0.45,login,success,Singapore
+2026-10-07 10:12:00,user1,198.51.100.50,login,failed,United States
+2026-10-07 10:12:10,user2,198.51.100.50,login,failed,United States
+2026-10-07 10:12:20,user3,198.51.100.50,login,failed,United States
+2026-10-07 10:12:30,user4,198.51.100.50,login,failed,United States
+2026-10-07 10:15:00,admin,192.168.1.100,privilege_escalation,failed,India

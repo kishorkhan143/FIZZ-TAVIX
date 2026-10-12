@@ -1,0 +1,107 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": [
+    {
+      "id": "H1",
+      "severity": "HIGH",
+      "title": "React import missing in motion.js",
+      "description": "The useMotionPrefs() function uses React.useState() and React.useEffect() but motion.js doesn't import React. Will cause runtime error.",
+      "location": "Section 2, motion.js code block",
+      "fix": "Add 'import React from \"react\";' at the top of motion.js"
+    },
+    {
+      "id": "H2",
+      "severity": "HIGH",
+      "title": "Unverified assumption: AnimatePresence from motion package",
+      "description": "Design assumes motion package exports AnimatePresence, but it does not. Motion uses key-based presence via initial={false}. This is a fundamental API mismatch with Framer Motion v5+.",
+      "location": "Sections 3.A, 3.E (Page/Section Switching, Lists)",
+      "fix": "Either (A) use motion's key-based presence API or (B) revert to Framer Motion. Requires decision and API rewrite."
+    },
+    {
+      "id": "H3",
+      "severity": "HIGH",
+      "title": "List batching/queuing mechanism completely unspecified",
+      "description": "Design says 'cap to 5 simultaneous, queue remaining' but provides no algorithm, state structure, timing, or queue-flush trigger. Implementer must guess.",
+      "location": "Section 3.E, Section 5 (Batching & Throttling)",
+      "fix": "Define batching pseudocode: (1) batch size, (2) flush timeout, (3) queue data structure, (4) append logic during batch, (5) cleanup on unmount"
+    },
+    {
+      "id": "H4",
+      "severity": "HIGH",
+      "title": "RiskGauge counter animation implementation undefined",
+      "description": "Design suggests 'motion.div + animate({textContent})' which motion doesn't support. References undefined '<AnimatedCounter>' component. No implementation approach provided.",
+      "location": "Section 3.I (RiskGauge), Section 1 Inventory",
+      "fix": "Choose and document approach: (A) useSpring + useTransform to animate number, or (B) external library like react-countup. Add to motion.js helpers."
+    },
+    {
+      "id": "H5",
+      "severity": "HIGH",
+      "title": "Contradictory and incomplete exit animation timings",
+      "description": "Page exit is both '0.2s' and '60% of enter (0.204s)'; row exits poorly defined; tooltip exits never defined. Ambiguous whether list collapse happens before or during row exit.",
+      "location": "Section 2 (variants.fadeUp) vs Section 3.A, 3.E, 3.J, 3.K",
+      "fix": "Create single unified exit timing rule in motion.js: define page exit, row exit, tooltip exit, and modal exit durations explicitly. Clarify collapse timing."
+    },
+    {
+      "id": "M1",
+      "severity": "MEDIUM",
+      "title": "CSS cleanup list incomplete and unverified",
+      "description": "Design lists ~12 keyframes to remove but grep shows 60+ animation/transition rules across 4+ CSS files. Missing: 50+ transition rules, iosShimmer, iosPulseSubtle, all 'transition: all' conversions.",
+      "location": "Section 4 (CSS Cleanup)",
+      "fix": "Audit all CSS files systematically. Provide exact file:line:selector for every animation/transition rule to remove. Ensure list covers ios-motion.css, CustomSelect.css, csvAnalytics.css."
+    },
+    {
+      "id": "M2",
+      "severity": "MEDIUM",
+      "title": "Live component inventory incomplete",
+      "description": "Codebase has 13 files in live/ but design documents only 3. Missing: AddLabModal, AssignLabModal, LabComputersView, Header, LiveAlertModal, LiveAlertsView, LiveDashboardView, LiveGroupDetailsModal, LiveGroupedDimensionsView.",
+      "location": "Section 1 (Component Inventory), Component Inventory table",
+      "fix": "Expand inventory to list all 13 live components. Assign motion needs: modals → sheet spring, views → pageTransition, lists → AnimatePresence layout."
+    },
+    {
+      "id": "M3",
+      "severity": "MEDIUM",
+      "title": "WhileInView scroll margin unit ambiguous",
+      "description": "Design specifies 'viewport={{ margin: -40 }}' but doesn't clarify if -40 means pixels, percentage, or CSS margin syntax. Motion expects pixels or string with unit.",
+      "location": "Section 3.F (Panels), Section 3.H (Empty States)",
+      "fix": "Clarify to 'viewport={{ margin: \"-40px\" }}' (pixels). Add scrollRevealConfig constant to motion.js to ensure consistency."
+    },
+    {
+      "id": "N1",
+      "severity": "NIT",
+      "title": "Status badge breathing glow infinite loop contradicts motion rules",
+      "description": "Design specifies infinite breathing loop but Step 3 says 'avoid infinite loops'. Alert pulse is correctly one-time; status badge should match or clarify context (idle vs active).",
+      "location": "Section 3.G (Status Badge), Section 5 (Performance Constraints)",
+      "fix": "Either change to finite loop or clarify that status badge breathing is allowed as exception. Document rationale in motion.js comment."
+    },
+    {
+      "id": "N2",
+      "severity": "NIT",
+      "title": "Clock tabular-nums font feature not verified with Inter",
+      "description": "Design specifies 'font-feature-settings: tnum' to prevent clock layout shift, but Inter doesn't support tnum by default. May not work as intended.",
+      "location": "Section 3.C (Header)",
+      "fix": "Test clock digit updates on Inter font. If tnum unsupported, either use monospace font or accept minor layout shift. Document finding."
+    },
+    {
+      "id": "N3",
+      "severity": "NIT",
+      "title": "Motion package React 19 compatibility not verified",
+      "description": "Design claims motion is 'React 19 compatible' but no version constraint specified. Motion latest may not support React 19 RC/stable.",
+      "location": "Section 2 (Installation), package.json",
+      "fix": "Test 'npm install motion && npm run build'. If fails, specify exact motion version or revert to Framer Motion. Document version in motion.js."
+    },
+    {
+      "id": "N4",
+      "severity": "NIT",
+      "title": "useMotionConfig hook exported but never referenced",
+      "description": "useMotionConfig() function defined and exported in motion.js but no component shown using it. useMotionPrefs() is active. Potential dead code or incomplete design.",
+      "location": "Section 2 (motion.js code block, last function)",
+      "fix": "Either remove useMotionConfig() or clarify its use case. If intended as primary hook, refactor components to use it consistently instead of direct spring/variant imports."
+    }
+  ],
+  "highCount": 5,
+  "mediumCount": 3,
+  "nitCount": 4,
+  "reviewDoc": "c:\\Users\\wwwki\\OneDrive\\Desktop\\cyber hacks\\TAVIX-GAURD\\Working prototype\\log\\.agents\\tasks\\design-review.md",
+  "reviewedAt": "2025-01-15T00:00:00Z",
+  "reviewer": "design-review-subagent"
+}
