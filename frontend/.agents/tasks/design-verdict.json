@@ -1,0 +1,105 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": [
+    {
+      "id": 1,
+      "severity": "HIGH",
+      "title": "useReducedMotion Hook Missing",
+      "description": "Motion-design.md specifies useReducedMotion hook at src/utils/useReducedMotion.js, but this file does not exist in the codebase. Without it, React components cannot conditionally apply animations based on prefers-reduced-motion.",
+      "location": "Motion-Design.md Section 3.1, Section 7.1",
+      "fix": "Create src/utils/useReducedMotion.js implementing useEffect hook that detects window.matchMedia('(prefers-reduced-motion: reduce)') and returns boolean."
+    },
+    {
+      "id": 2,
+      "severity": "MEDIUM",
+      "title": "Ambiguous ScrollReveal Stagger Implementation",
+      "description": "Component-inventory.md references 'stagger=0,1,2...' without explicitly stating the 45ms multiplier. While ScrollReveal.jsx correctly implements 45ms * stagger, the design documents don't clearly state this is a fixed multiplier vs. a variable.",
+      "location": "Component-Inventory.md (multiple entries); Motion-Design.md Section 5.12; ScrollReveal.jsx",
+      "fix": "Update motion-design.md Section 5.12 to state: 'All stagger delays use fixed 45ms multiplier managed by ScrollReveal component. Pass stagger={0}, {1}, {2} etc. Do not manually calculate.'"
+    },
+    {
+      "id": 3,
+      "severity": "HIGH",
+      "title": "Undefined CSS Token: --ios-duration-base",
+      "description": "Motion-design.md Sections 5.2 and 5.4, and component-inventory.md multiple entries reference --ios-duration-base, but this token is not defined in ios-motion.css. Only defined tokens are: micro, fast, normal, smooth, page, skeleton.",
+      "location": "Motion-Design.md Sections 5.2, 5.4; Component-Inventory.md (admin-btn, date-filter-pill, status-badge); Missing from ios-motion.css",
+      "fix": "OPTION A: Add '--ios-duration-base: 180ms;' to ios-motion.css (equivalent to --ios-duration-fast). OPTION B (Recommended): Replace all --ios-duration-base references with --ios-duration-fast to standardize on existing tokens."
+    },
+    {
+      "id": 4,
+      "severity": "HIGH",
+      "title": "Contradictory and Vague Component Animation Specs",
+      "description": "Component-inventory.md lists animations with varying durations for similar components (e.g., stat-card hover uses --ios-duration-normal while nav-item hover uses --ios-duration-fast) without clear justification. More critically, inventory entries say 'Wrap with ScrollReveal' without specifying CSS classes, keyframes, or exact implementation steps.",
+      "location": "Component-Inventory.md (all component rows); Motion-Design.md Section 5 (inconsistent durations)",
+      "fix": "Redesign component-inventory.md table to include columns: [Animation Type] [CSS Class(es)] [Keyframe Name] [Trigger] [Duration] [Easing] [Notes]. Consolidate durations: entrance=smooth (340ms), hover=fast (180ms), badges=normal (260ms)."
+    },
+    {
+      "id": 5,
+      "severity": "MEDIUM",
+      "title": "Unverified CSS Class Selectors in ios-motion.css",
+      "description": "ios-motion.css applies animations to selectors like .custom-select-menu, .export-dropdown-menu, .modal-dialog, but these exact class names are not verified to exist in the actual React component implementations. If class names differ, animations will silently fail.",
+      "location": "ios-motion.css Sections 9 and 10; React components CustomSelect.jsx, ExportAnalysisDropdown.jsx, modals",
+      "fix": "Before finalizing animations, verify that CustomSelect.jsx uses .custom-select-menu, ExportAnalysisDropdown.jsx uses .export-dropdown-menu, and all modal implementations use .modal-dialog and .modal-backdrop. Document findings in implementation verification table."
+    },
+    {
+      "id": 6,
+      "severity": "MEDIUM",
+      "title": "Incomplete ScrollReveal Integration Specification",
+      "description": "Ambiguity in how to apply ScrollReveal: should each item be wrapped individually (Pattern A: separate ScrollReveal per item), or should a container be wrapped (Pattern B: one ScrollReveal wraps all children)? No clear guidance on which pattern to use when, or performance implications.",
+      "location": "Motion-Design.md Section 5.12; Component-Inventory.md ScrollReveal entries",
+      "fix": "Add ScrollReveal Integration Guide section to motion-design.md documenting Pattern 1 (individual wraps, recommended for <12 items) vs. Pattern 2 (container wrap, for performance with 100+ items). Provide code examples for each."
+    },
+    {
+      "id": 7,
+      "severity": "MEDIUM",
+      "title": "Unclear Page Transition Scope for Nested Routes",
+      "description": "App.jsx correctly wraps top-level route changes (overview, live, labs, csv, etc.) with PageTransition. However, component-inventory.md suggests detail views (ComputerDetailView, EntityDetail, LabTerminalsView) should also have 'Wrap with PageTransition', but it's unclear if internal navigation (lab → computer → detail) within a route should trigger full page transitions or just content fades.",
+      "location": "Component-Inventory.md (ComputerDetailView, EntityDetail, LabTerminalsView entries); App.jsx routing",
+      "fix": "Clarify in motion-design.md: 'Page transitions apply to top-level route changes only. Nested view changes within a route use content-level scroll-reveals for internal animations, not full page transitions.' Update component-inventory.md entries to remove ambiguous PageTransition wraps for nested views."
+    },
+    {
+      "id": 8,
+      "severity": "MEDIUM",
+      "title": "Missing Accessibility Test Strategy",
+      "description": "Motion-design.md specifies prefers-reduced-motion handling but does not define how to test or verify it. Component-inventory.md includes a testing checklist but lacks specific pass/fail criteria for accessibility.",
+      "location": "Motion-Design.md Section 7; Component-Inventory.md 'Testing & Verification' section",
+      "fix": "Add to component-inventory.md testing checklist: '[ ] Accessibility: Enable prefers-reduced-motion in DevTools > Rendering, verify all animations complete instantly and no content shifts. Manual test on macOS/iOS with Accessibility > Display > Reduce motion enabled.'"
+    },
+    {
+      "id": 9,
+      "severity": "NIT",
+      "title": "Inconsistent Duration References in Motion-Design.md Section 5",
+      "description": "Section 5 (Component-by-Component Motion Spec) mixes duration references: some use --ios-duration-base (undefined), others use --ios-duration-fast or --ios-duration-smooth for similar interactions. Creates confusion about which token to use.",
+      "location": "Motion-Design.md Sections 5.2, 5.3, 5.4",
+      "fix": "Standardize Section 5 table: remove --ios-duration-base references; use --ios-duration-fast (180ms) for all button/nav hover, --ios-duration-smooth (340ms) for card entrance, --ios-duration-normal (260ms) for dropdown/badge hover."
+    },
+    {
+      "id": 10,
+      "severity": "NIT",
+      "title": "Missing CSS Fallback Values for Custom Properties",
+      "description": "ios-motion.css uses CSS custom properties without fallback values (e.g., var(--ios-duration-page) instead of var(--ios-duration-page, 0.3s)). If property is undefined, animation defaults to 0s duration.",
+      "location": "ios-motion.css (all animation rules)",
+      "fix": "Add fallback values to critical rules: animation: iosPageEntrance var(--ios-duration-page, 0.3s) var(--ios-spring-soft, cubic-bezier(0.16, 1, 0.3, 1)) forwards;"
+    },
+    {
+      "id": 11,
+      "severity": "NIT",
+      "title": "Vague Performance Guideline: '8-10 DOM Elements'",
+      "description": "Motion-Design.md Section 6.3 states 'Limit to 8-10 DOM elements animating at once' but doesn't define 'animating'. Does this include hover states (not active until interaction), completed animations, or infinite pulses?",
+      "location": "Motion-Design.md Section 6.3",
+      "fix": "Clarify: 'Limit simultaneous *active* animations (currently executing, not completed or waiting for interaction) to 8-10. Include: scroll-triggered reveals while scrolling, loading skeletons, infinite pulses. Exclude: hover/active states, completed animations.'"
+    },
+    {
+      "id": 12,
+      "severity": "NIT",
+      "title": "Inconsistent Stagger Mechanism Documentation",
+      "description": "ios-motion.css defines .ios-stagger-1 through .ios-stagger-10 CSS classes, while ScrollReveal component manages stagger via prop. Two different stagger mechanisms exist without clear guidance on when to use each. Confusing for implementers.",
+      "location": "ios-motion.css Section 5; Motion-Design.md Section 2.2; ScrollReveal.jsx; Component-Inventory.md",
+      "fix": "Clarify in motion-design.md Section 2.2: 'Two stagger mechanisms: 1) ScrollReveal stagger prop (recommended for list items) - use stagger={0},{1},{2}; 2) CSS classes (legacy) - add .ios-stagger-1,.ios-stagger-2 to static keyframe animations. Use only mechanism 1 in modern implementation.'"
+    }
+  ],
+  "highCount": 3,
+  "mediumCount": 6,
+  "nitCount": 3,
+  "reviewDoc": "c:\\Users\\wwwki\\OneDrive\\Desktop\\cyber hacks\\TAVIX-GAURD\\Working prototype\\log\\frontend\\.agents\\tasks\\design-review.md"
+}

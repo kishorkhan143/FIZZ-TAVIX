@@ -1,0 +1,46 @@
+/* ComputerDetailView Page-Specific Styles */
+.computer-detail-view {
+  animation: iosPageEntrance var(--ios-duration-page, 0.3s) var(--ios-spring-soft, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+/* Data table container responsive scrolling */
+.computer-detail-view .data-table-container {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+}
+
+.computer-detail-view .data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.computer-detail-view .data-table thead tr {
+  border-bottom: 1px solid var(--border-light);
+}
+
+.computer-detail-view .data-table tbody tr {
+  border-bottom: 1px solid var(--border-light);
+  transition: background-color var(--ios-duration-fast, 0.18s) var(--ios-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+              transform var(--ios-duration-fast, 0.18s) var(--ios-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.computer-detail-view .data-table tbody tr:hover {
+  background-color: var(--bg-tertiary);
+  transform: translateX(3px);
+}
+
+.computer-detail-view .data-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.computer-detail-view .data-table th,
+.computer-detail-view .data-table td {
+  text-align: left;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

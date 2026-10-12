@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200" role="img" aria-labelledby="title desc">
+<title id="title">TAVIX GAURD emblem</title>
+<desc id="desc">A sharp cyan and deep navy shield crest surrounding a geometric T, crossed by a rising diagonal slash, closely following the supplied reference.</desc>
+<defs>
+  <linearGradient id="topL" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#12c8f2"/><stop offset="1" stop-color="#07529b"/></linearGradient>
+  <linearGradient id="topR" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#00d6f5"/><stop offset="1" stop-color="#0877c6"/></linearGradient>
+  <linearGradient id="edgeL" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#087bc0"/><stop offset=".55" stop-color="#073d7c"/><stop offset="1" stop-color="#061d4b"/></linearGradient>
+  <linearGradient id="edgeR" x1="1" y1="0" x2="0" y2="1"><stop stop-color="#087bc0"/><stop offset=".5" stop-color="#073d7c"/><stop offset="1" stop-color="#061d4b"/></linearGradient>
+  <linearGradient id="tLeft" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#07326c"/><stop offset="1" stop-color="#061c45"/></linearGradient>
+  <linearGradient id="tRight" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#05bce9"/><stop offset="1" stop-color="#08d4f4"/></linearGradient>
+  <linearGradient id="slash" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#06417e"/><stop offset=".55" stop-color="#087ec2"/><stop offset="1" stop-color="#11c8ef"/></linearGradient>
+</defs>
+<!-- Angular folded upper rim -->
+<path d="M145 205 C330 211 476 177 600 78 C724 177 870 211 1055 205 L1055 420 L966 487 L966 352 C835 338 714 288 600 205 C486 288 365 338 234 352 L234 487 L145 420 Z" fill="url(#topL)"/>
+<path d="M600 78 C724 177 870 211 1055 205 L1055 420 L966 487 L966 352 C835 338 714 288 600 205 Z" fill="url(#topR)"/>
+<!-- Dark underside of the folded rim -->
+<path d="M145 205 C326 244 476 219 600 157 C724 219 874 244 1055 205 L966 304 C821 305 704 259 600 201 C496 259 379 305 234 304 Z" fill="#062957" opacity=".95"/>
+<path d="M145 205 L234 304 L234 488 L145 432 Z" fill="#0876b9"/>
+<path d="M1055 205 L966 304 L966 488 L1055 432 Z" fill="#0876b9"/>
+<!-- Outer descending shield sides -->
+<path d="M145 432 L234 488 C247 693 348 857 487 1000 L487 1081 C299 938 170 731 145 520 Z" fill="url(#edgeL)"/>
+<path d="M1055 432 L966 488 C953 693 852 857 713 1000 L713 1081 C901 938 1030 731 1055 520 Z" fill="url(#edgeR)"/>
+<!-- Cyan inner bevels -->
+<path d="M234 488 L259 514 L285 693 L306 733 C280 673 254 585 234 488 Z" fill="#08bfe9"/>
+<path d="M966 488 L941 514 L915 693 L894 733 C920 673 946 585 966 488 Z" fill="#087bc1"/>
+<!-- T monogram, split down the center -->
+<path d="M391 348 L809 348 L754 453 L624 453 L624 1104 L570 1160 L516 1104 L516 453 L336 453 Z" fill="url(#tLeft)"/>
+<path d="M624 348 L809 348 L754 453 L624 453 L624 1104 L624 1160 L624 348 Z" fill="url(#tRight)"/>
+<!-- precise center seam and lower facets -->
+<path d="M570 453 L624 453 L624 1160 L570 1104 Z" fill="#061b43" opacity=".8"/>
+<path d="M624 453 L678 453 L678 1104 L624 1160 Z" fill="#08bde8" opacity=".85"/>
+<!-- Diagonal signature slash extending beyond shield -->
+<path d="M268 633 L1111 386 L1034 460 L300 711 Z" fill="#f9fdff"/>
+<path d="M268 633 L1111 386 L1075 435 L292 681 Z" fill="url(#slash)"/>
+<path d="M292 681 L1075 435 L1034 460 L300 711 Z" fill="#06376d" opacity=".9"/>
+<!-- subtle highlight -->
+<path d="M600 80 C724 177 870 211 1055 205" fill="none" stroke="#52e7ff" stroke-width="4" opacity=".7"/>
+</svg>
