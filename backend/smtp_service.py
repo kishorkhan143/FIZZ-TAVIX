@@ -18,14 +18,26 @@ from typing import Optional, List, Tuple
 logger = logging.getLogger("authsentinel.smtp")
 
 # ── SMTP Configuration ───────────────────────────────────────────────────────
-SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER", "").strip()
-_raw_pass = os.getenv("SMTP_PASSWORD", "")
-SMTP_PASSWORD = _raw_pass.replace(" ", "")
-SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", "TAVIX GUARD SOC")
-DEFAULT_ADMIN_EMAIL = os.getenv("DEFAULT_ADMIN_EMAIL", "kishorkhan.dev@gmail.com").strip()
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+# Pull from pydantic settings (config.py) so .env and hardcoded defaults work.
+try:
+    from config import settings as _cfg
+    SMTP_HOST = _cfg.smtp_host
+    SMTP_PORT = _cfg.smtp_port
+    SMTP_USER = _cfg.smtp_user.strip()
+    SMTP_PASSWORD = _cfg.smtp_password.replace(" ", "")
+    SMTP_FROM_NAME = _cfg.smtp_from_name
+    DEFAULT_ADMIN_EMAIL = _cfg.default_admin_email.strip()
+    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+except Exception:
+    # Fallback to raw env vars if config import fails
+    SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USER = os.getenv("SMTP_USER", "").strip()
+    _raw_pass = os.getenv("SMTP_PASSWORD", "")
+    SMTP_PASSWORD = _raw_pass.replace(" ", "")
+    SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", "TAVIX GUARD SOC")
+    DEFAULT_ADMIN_EMAIL = os.getenv("DEFAULT_ADMIN_EMAIL", "kishorkhan.dev@gmail.com").strip()
+    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 
 def is_configured() -> bool:

@@ -156,6 +156,7 @@ class HealthResponse(BaseModel):
     smtp_configured: bool = False
     websocket_connections: int
     collector_status: str
+    collector_count: int = 0
     collector_hostname: Optional[str] = None
     collector_ip: Optional[str] = None
     uptime_seconds: float

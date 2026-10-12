@@ -1442,6 +1442,7 @@ async def health(db: Session = Depends(get_db)):
         database=db_status,
         websocket_connections=manager.connection_count,
         collector_status=col_status,
+        collector_count=len(connected),
         collector_hostname=col_hostname,
         collector_ip=col_ip,
         uptime_seconds=time.monotonic() - _start_time,
