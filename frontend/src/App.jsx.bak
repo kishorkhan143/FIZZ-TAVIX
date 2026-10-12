@@ -1,0 +1,605 @@
+Created At: 2026-10-08T19:47:04+05:30
+Completed At: 2026-10-08T19:47:04+05:30
+File Path: `file:///c:/Users/niranjan/OneDrive/Desktop/hack/Working%20prototype/log/frontend/src/App.jsx`
+Total Lines: 561
+Total Bytes: 19606
+Showing lines 1 to 100
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: /**
+2:  * AuthSentinel — Modern Security Dashboard
+3:  * Light mode with sidebar navigation and clean UI
+4:  */
+5: 
+6: import { useState, useEffect, useCallback } from 'react';
+7: import './App.css';
+8: import { useAuthSentinel, BACKEND_URL, parseUtc } from './useAuthSentinel';
+9: import { LineChart, Line, AreaChart, Area, ResponsiveContainer } from 'recharts';
+10: import CsvAnalyticsPage from './csv_analytics/CsvAnalyticsPage';
+11: 
+12: // ── Icons as SVG Components ──────────────────────────────────────────────────
+13: function Icon({ name, size = 20 }) {
+14:   const icons = {
+15:     'chart-bar': (
+16:       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+17:         <rect x="3" y="3" width="7" height="18"></rect>
+18:         <rect x="14" y="8" width="7" height="13"></rect>
+19:       </svg>
+20:     ),
+21:     'signal': (
+22:       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+23:         <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+24:       </svg>
+25:     ),
+26:     'alert-triangle': (
+27:       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+28:         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3.04h16.94a2 2 0 0 0 1.71-3.04l-8.47-14.14a2 2 0 0 0-3.42 0z"></path>
+29:         <line x1="12" y1="9" x2="12" y2="13"></line>
+30:         <line x1="12" y1="17" x2="12.01" y2="17"></line>
+31:       </svg>
+32:     ),
+33:     'beaker': (
+34:       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+35:         <path d="M4.54 11.46L2.19 14.81A2 2 0 0 0 3.81 18h16.38a2 2 0 0 0 1.62-3.19l-2.35-3.35"></path>
+36:         <path d="M6 4h12v7H6z"></path>
+37:       </svg>
+38:     ),
+39:     'monitor': (
+40:       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+41:         <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+42:         <line x1="8" y1="21" x2="16" y2="21"></line>
+43:         <line x1="12" y1="17" x2="12" y2="21"></line>
+44:       </svg>
+45:     ),
+46:     'table': (
+47:       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+48:         <path d="M3 3h18v2H3zm0 6h18v2H3zm0 6h18v2H3z"></path>
+49:         <line x1="10" y1="3" x2="10" y2="19"></line>
+50:         <line x1="14" y1="3" x2="14" y2="19"></line>
+51:       </svg>
+52:     ),
+53:     'settings': (
+54:       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+55:         <circle cx="12" cy="12" r="3"></circle>
+56:         <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m3.08 3.08l4.24 4.24M1 12h6m6 0h6m-15.78 7.78l4.24-4.24m3.08-3.08l4.24-4.24"></path>
+57:       </svg>
+58:     ),
+59:     'user': (
+60:       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+61:         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+62:         <circle cx="12" cy="7" r="4"></circle>
+63:       </svg>
+64:     ),
+65:     'activity': (
+66:       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+67:         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+68:       </svg>
+69:     ),
+70:     'check-circle': (
+71:       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+72:         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+73:         <polyline points="22 4 12 14.01 9 11.01"></polyline>
+74:       </svg>
+75:     ),
+76:     'x-circle': (
+77:       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+78:         <circle cx="12" cy="12" r="10"></circle>
+79:         <line x1="15" y1="9" x2="9" y2="15"></line>
+80:         <line x1="9" y1="9" x2="15" y2="15"></line>
+81:       </svg>
+82:     ),
+83:   };
+84: 
+85:   return icons[name] || null;
+86: }
+87: 
+88: // ── Navigation Items ─────────────────────────────────────────────────────────
+89: const MENU_ITEMS = [
+90:   {
+91:     category: 'MONITORING',
+92:     items: [
+93:       { id: 'overview', label: 'Overview', icon: 'chart-bar' },
+94:       { id: 'live', label: 'Live Telemetry', icon: 'signal' },
+95:       { id: 'incidents', label: 'Incidents', icon: 'alert-triangle' },
+96:     ]
+97:   },
+98:   {
+99:     category: 'INVENTORY',
+100:     items: [
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+Created At: 2026-10-08T19:47:08+05:30
+Completed At: 2026-10-08T19:47:09+05:30
+File Path: `file:///c:/Users/niranjan/OneDrive/Desktop/hack/Working%20prototype/log/frontend/src/App.jsx`
+Total Lines: 561
+Total Bytes: 19606
+Showing lines 90 to 220
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+90:   {
+91:     category: 'MONITORING',
+92:     items: [
+93:       { id: 'overview', label: 'Overview', icon: 'chart-bar' },
+94:       { id: 'live', label: 'Live Telemetry', icon: 'signal' },
+95:       { id: 'incidents', label: 'Incidents', icon: 'alert-triangle' },
+96:     ]
+97:   },
+98:   {
+99:     category: 'INVENTORY',
+100:     items: [
+101:       { id: 'labs', label: 'Laboratories', icon: 'beaker' },
+102:       { id: 'terminals', label: 'Terminals', icon: 'monitor' },
+103:     ]
+104:   },
+105:   {
+106:     category: 'TOOLS',
+107:     items: [
+108:       { id: 'csv', label: 'CSV Analyzer', icon: 'table' },
+109:     ]
+110:   },
+111:   {
+112:     category: 'SYSTEM',
+113:     items: [
+114:       { id: 'settings', label: 'Settings', icon: 'settings' },
+115:     ]
+116:   },
+117: ];
+118: 
+119: // ── Helpers ──────────────────────────────────────────────────────────────────
+120: function fmtTime(ts) {
+121:   if (!ts) return '—';
+122:   try {
+123:     return parseUtc(ts).toLocaleTimeString('en-GB', { hour12: false });
+124:   } catch { return ts; }
+125: }
+126: 
+127: function fmtDateTime(ts) {
+128:   if (!ts) return '—';
+129:   try {
+130:     const d = parseUtc(ts);
+131:     return d.toLocaleString('en-GB', {
+132:       month: '2-digit', day: '2-digit',
+133:       hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+134:     });
+135:   } catch { return ts; }
+136: }
+137: 
+138: function alertTypeLabel(type) {
+139:   if (type === 'REPEATED_FAILURE') return 'BRUTE FORCE';
+140:   if (type === 'SUCCESS_AFTER_FAILURES') return 'ANOMALY';
+141:   return type;
+142: }
+143: 
+144: // ── Components ────────────────────────────────────────────────────────────────
+145: 
+146: function Sidebar({ activeMenu, onMenuChange }) {
+147:   return (
+148:     <aside className="sidebar">
+149:       <div className="sidebar-header">
+150:         <div className="logo">
+151:           <Icon name="alert-triangle" size={24} />
+152:         </div>
+153:         <div className="logo-text">
+154:           <div className="logo-title">AuthSentinel</div>
+155:           <div className="logo-subtitle">Monitor</div>
+156:         </div>
+157:       </div>
+158: 
+159:       <nav className="sidebar-nav">
+160:         {MENU_ITEMS.map((section) => (
+161:           <div key={section.category} className="nav-section">
+162:             <div className="nav-section-title">{section.category}</div>
+163:             <div className="nav-items">
+164:               {section.items.map((item) => (
+165:                 <button
+166:                   key={item.id}
+167:                   className={`nav-item ${activeMenu === item.id ? 'active' : ''}`}
+168:                   onClick={() => onMenuChange(item.id)}
+169:                 >
+170:                   <span className="nav-icon">
+171:                     <Icon name={item.icon} size={18} />
+172:                   </span>
+173:                   <span className="nav-label">{item.label}</span>
+174:                 </button>
+175:               ))}
+176:             </div>
+177:           </div>
+178:         ))}
+179:       </nav>
+180: 
+181:       <div className="sidebar-footer">
+182:         <button className="admin-btn">
+183:           <span className="admin-icon">
+184:             <Icon name="user" size={16} />
+185:           </span>
+186:           <span>Admin Account</span>
+187:         </button>
+188:       </div>
+189:     </aside>
+190:   );
+191: }
+192: 
+193: function Header({ currentMenuLabel, currentCategory }) {
+194:   const [time, setTime] = useState(new Date());
+195: 
+196:   useEffect(() => {
+197:     const timer = setInterval(() => setTime(new Date()), 1000);
+198:     return () => clearInterval(timer);
+199:   }, []);
+200: 
+201:   return (
+202:     <header className="header">
+203:       <div className="header-left">
+204:         <div className="header-category">{currentCategory}</div>
+205:       </div>
+206:       <div className="header-right">
+207:         <div className="clock">
+208:           {time.toLocaleTimeString('en-GB', { hour12: false })}
+209:         </div>
+210:       </div>
+211:     </header>
+212:   );
+213: }
+214: 
+215: function StatusBadge({ label, online, count }) {
+216:   return (
+217:     <div className={`status-badge ${online ? 'online' : 'offline'}`}>
+218:       <span className="dot" />
+219:       <span>{label}</span>
+220:       {count !== undefined && <span className="count">{count}</span>}
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+Created At: 2026-10-08T19:47:15+05:30
+Completed At: 2026-10-08T19:47:15+05:30
+File Path: `file:///c:/Users/niranjan/OneDrive/Desktop/hack/Working%20prototype/log/frontend/src/App.jsx`
+Total Lines: 561
+Total Bytes: 19606
+Showing lines 220 to 400
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+220:       {count !== undefined && <span className="count">{count}</span>}
+221:     </div>
+222:   );
+223: }
+224: 
+225: function OverviewSection({ stats, events, alerts }) {
+226:   const safeStats = stats || { total_events: 0, successful_logins: 0, failed_logins: 0, active_alerts: 0 };
+227:   const chartData = [{
+228:     time: 'Now',
+229:     events: safeStats.total_events || 0,
+230:     successful: safeStats.successful_logins || 0,
+231:     failed: safeStats.failed_logins || 0,
+232:     alerts: safeStats.active_alerts || 0,
+233:   }];
+234: 
+235:   return (
+236:     <div className="section">
+237:       <div className="section-header">
+238:         <h2>System Status</h2>
+239:         <p>Real-time monitoring overview</p>
+240:       </div>
+241: 
+242:       <div className="stats-grid">
+243:         <div className="stat-card">
+244:           <div className="stat-label">Total Events</div>
+245:           <div className="stat-content">
+246:             <div className="stat-icon">
+247:               <Icon name="activity" size={32} />
+248:             </div>
+249:             <div className="stat-value">{safeStats.total_events || 0}</div>
+250:           </div>
+251:           <div className="stat-chart">
+252:             <ResponsiveContainer width="100%" height={40}>
+253:               <AreaChart data={chartData}>
+254:                 <Area 
+255:                   type="monotone" 
+256:                   dataKey="events" 
+257:                   stroke="#0066ff" 
+258:                   fill="#e0efff" 
+259:                   strokeWidth={2}
+260:                   dot={false}
+261:                 />
+262:               </AreaChart>
+263:             </ResponsiveContainer>
+264:           </div>
+265:         </div>
+266: 
+267:         <div className="stat-card">
+268:           <div className="stat-label">Successful</div>
+269:           <div className="stat-content">
+270:             <div className="stat-icon">
+271:               <Icon name="check-circle" size={32} />
+272:             </div>
+273:             <div className="stat-value">{safeStats.successful_logins || 0}</div>
+274:           </div>
+275:           <div className="stat-chart">
+276:             <ResponsiveContainer width="100%" height={40}>
+277:               <AreaChart data={chartData}>
+278:                 <Area 
+279:                   type="monotone" 
+280:                   dataKey="successful" 
+281:                   stroke="#10b981" 
+282:                   fill="#ecfdf5" 
+283:                   strokeWidth={2}
+284:                   dot={false}
+285:                 />
+286:               </AreaChart>
+287:             </ResponsiveContainer>
+288:           </div>
+289:         </div>
+290: 
+291:         <div className="stat-card">
+292:           <div className="stat-label">Failed</div>
+293:           <div className="stat-content">
+294:             <div className="stat-icon">
+295:               <Icon name="x-circle" size={32} />
+296:             </div>
+297:             <div className="stat-value">{safeStats.failed_logins || 0}</div>
+298:           </div>
+299:           <div className="stat-chart">
+300:             <ResponsiveContainer width="100%" height={40}>
+301:               <AreaChart data={chartData}>
+302:                 <Area 
+303:                   type="monotone" 
+304:                   dataKey="failed" 
+305:                   stroke="#ef4444" 
+306:                   fill="#fee2e2" 
+307:                   strokeWidth={2}
+308:                   dot={false}
+309:                 />
+310:               </AreaChart>
+311:             </ResponsiveContainer>
+312:           </div>
+313:         </div>
+314: 
+315:         <div className="stat-card alert">
+316:           <div className="stat-label">Alerts</div>
+317:           <div className="stat-content">
+318:             <div className="stat-icon">
+319:               <Icon name="alert-triangle" size={32} />
+320:             </div>
+321:             <div className="stat-value">{safeStats.active_alerts || 0}</div>
+322:           </div>
+323:           <div className="stat-chart">
+324:             <ResponsiveContainer width="100%" height={40}>
+325:               <AreaChart data={chartData}>
+326:                 <Area 
+327:                   type="monotone" 
+328:                   dataKey="alerts" 
+329:                   stroke="#f59e0b" 
+330:                   fill="#fffbeb" 
+331:                   strokeWidth={2}
+332:                   dot={false}
+333:                 />
+334:               </AreaChart>
+335:             </ResponsiveContainer>
+336:           </div>
+337:         </div>
+338:       </div>
+339: 
+340:       <div className="events-panel">
+341:         <div className="panel-header">
+342:           <h3>Recent Events</h3>
+343:           <span className="badge">{safeStats.total_events || 0}</span>
+344:         </div>
+345:         <EventsTable events={events} />
+346:       </div>
+347: 
+348:       <div className="alerts-panel">
+349:         <div className="panel-header">
+350:           <h3>Active Alerts</h3>
+351:           <span className="badge alert">{stats.active_alerts}</span>
+352:         </div>
+353:         <AlertList alerts={alerts} />
+354:       </div>
+355:     </div>
+356:   );
+357: }
+358: 
+359: function LiveTelemetrySection({ events, alerts }) {
+360:   return (
+361:     <div className="section">
+362:       <div className="section-header">
+363:         <h2>Live Telemetry</h2>
+364:         <p>Real-time event stream</p>
+365:       </div>
+366: 
+367:       <div className="telemetry-grid">
+368:         <div className="telemetry-panel">
+369:           <h3>Authentication Events</h3>
+370:           <EventsTable events={events} />
+371:         </div>
+372:         <div className="telemetry-panel">
+373:           <h3>Detected Incidents</h3>
+374:           <AlertList alerts={alerts} />
+375:         </div>
+376:       </div>
+377:     </div>
+378:   );
+379: }
+380: 
+381: function IncidentsSection({ alerts }) {
+382:   return (
+383:     <div className="section">
+384:       <div className="section-header">
+385:         <h2>Security Incidents</h2>
+386:         <p>All detected anomalies and threats</p>
+387:       </div>
+388: 
+389:       <div className="incidents-list">
+390:         <AlertList alerts={alerts} />
+391:       </div>
+392:     </div>
+393:   );
+394: }
+395: 
+396: function SettingsSection({ health }) {
+397:   const isCollectorOnline = health?.collector_status === 'CONNECTED';
+398:   const isBackendOnline   = health?.backend === 'ONLINE';
+399:   const isDbOnline        = health?.database === 'ONLINE';
+400: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+Created At: 2026-10-08T19:47:20+05:30
+Completed At: 2026-10-08T19:47:20+05:30
+File Path: `file:///c:/Users/niranjan/OneDrive/Desktop/hack/Working%20prototype/log/frontend/src/App.jsx`
+Total Lines: 561
+Total Bytes: 19606
+Showing lines 401 to 561
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+401:   return (
+402:     <div className="section">
+403:       <div className="section-header">
+404:         <h2>System Settings</h2>
+405:         <p>Configure system preferences and connections</p>
+406:       </div>
+407: 
+408:       <div className="settings-card">
+409:         <h3>System Status</h3>
+410:         <p className="settings-subtitle">Monitor backend services and database connections</p>
+411:         
+412:         <div className="status-grid settings-status">
+413:           <StatusBadge label="Backend" online={isBackendOnline} />
+414:           <StatusBadge label="Database" online={isDbOnline} />
+415:           <StatusBadge label="Collectors" online={isCollectorOnline} count={isCollectorOnline ? 1 : 0} />
+416:         </div>
+417:       </div>
+418: 
+419:       <div className="settings-card">
+420:         <h3>Service Information</h3>
+421:         <div className="info-grid">
+422:           <div className="info-item">
+423:             <span className="info-label">Backend URL:</span>
+424:             <span className="info-value">{BACKEND_URL}</span>
+425:           </div>
+426:           <div className="info-item">
+427:             <span className="info-label">Database:</span>
+428:             <span className="info-value">SQLite (authsentinel.db)</span>
+429:           </div>
+430:           <div className="info-item">
+431:             <span className="info-label">Frontend URL:</span>
+432:             <span className="info-value">{window.location.origin}</span>
+433:           </div>
+434:           {health && (
+435:             <div className="info-item">
+436:               <span className="info-label">Uptime:</span>
+437:               <span className="info-value">{Math.round((health.uptime_seconds || 0) / 60)} minutes</span>
+438:             </div>
+439:           )}
+440:         </div>
+441:       </div>
+442:     </div>
+443:   );
+444: }
+445: 
+446: function EventsTable({ events }) {
+447:   if (!events.length) {
+448:     return (
+449:       <div className="empty-state">
+450:         <p>No events to display</p>
+451:       </div>
+452:     );
+453:   }
+454: 
+455:   return (
+456:     <div className="events-list">
+457:       {events.map((ev) => (
+458:         <div key={ev.id} className={`event-row ${ev.status}`}>
+459:           <div className="event-time">{fmtTime(ev.timestamp)}</div>
+460:           <div className="event-user">{ev.username || '—'}</div>
+461:           <div className="event-ip">{ev.source_ip || '—'}</div>
+462:           <div className={`event-status ${ev.status}`}>
+463:             {ev.status === 'SUCCESS' ? (
+464:               <Icon name="check-circle" size={16} />
+465:             ) : (
+466:               <Icon name="x-circle" size={16} />
+467:             )}
+468:           </div>
+469:           <div className={`risk-level ${ev.risk_level}`}>{ev.risk_level}</div>
+470:         </div>
+471:       ))}
+472:     </div>
+473:   );
+474: }
+475: 
+476: function AlertList({ alerts }) {
+477:   if (!alerts.length) {
+478:     return (
+479:       <div className="empty-state">
+480:         <p>No alerts to display</p>
+481:       </div>
+482:     );
+483:   }
+484: 
+485:   return (
+486:     <div className="alerts-list">
+487:       {alerts.map((al) => (
+488:         <div key={al.id} className={`alert-row ${al.risk_level}`}>
+489:           <div className="alert-type">{alertTypeLabel(al.alert_type)}</div>
+490:           <div className="alert-user">{al.username}</div>
+491:           <div className="alert-ip">{al.source_ip}</div>
+492:           {al.failure_count > 0 && <div className="alert-count">×{al.failure_count}</div>}
+493:           <div className="alert-time">{fmtDateTime(al.triggered_at)}</div>
+494:         </div>
+495:       ))}
+496:     </div>
+497:   );
+498: }
+499: 
+500: // ── Main App ───────────────────────────────────────────────────────────────────
+501: export default function App() {
+502:   const { events, alerts, stats, health } = useAuthSentinel();
+503:   const [activeMenu, setActiveMenu] = useState('overview');
+504: 
+505:   // Map menu IDs to labels and categories
+506:   const menuConfig = {
+507:     overview: { label: 'Overview', category: 'MONITORING' },
+508:     live: { label: 'Live Telemetry', category: 'MONITORING' },
+509:     incidents: { label: 'Incidents', category: 'MONITORING' },
+510:     labs: { label: 'Laboratories', category: 'INVENTORY' },
+511:     terminals: { label: 'Terminals', category: 'INVENTORY' },
+512:     csv: { label: 'CSV Analyzer', category: 'TOOLS' },
+513:     settings: { label: 'Settings', category: 'SYSTEM' },
+514:   };
+515: 
+516:   const currentMenu = menuConfig[activeMenu] || { label: 'Overview', category: 'MONITORING' };
+517: 
+518:   return (
+519:     <div className="app-wrapper">
+520:       <Sidebar activeMenu={activeMenu} onMenuChange={setActiveMenu} />
+521:       
+522:       <div className="main-content">
+523:         <Header 
+524:           currentMenuLabel={currentMenu.label}
+525:           currentCategory={currentMenu.category}
+526:         />
+527:         
+528:         <div className="body">
+529:           {activeMenu === 'overview' && <OverviewSection stats={stats} events={events} alerts={alerts} />}
+530:           {activeMenu === 'live' && <LiveTelemetrySection events={events} alerts={alerts} />}
+531:           {activeMenu === 'incidents' && <IncidentsSection alerts={alerts} />}
+532:           {activeMenu === 'labs' && (
+533:             <div className="section">
+534:               <div className="section-header">
+535:                 <h2>Laboratories</h2>
+536:                 <p>Configure test environments</p>
+537:               </div>
+538:               <div className="empty-state">
+539:                 <p>No laboratories configured</p>
+540:               </div>
+541:             </div>
+542:           )}
+543:           {activeMenu === 'terminals' && (
+544:             <div className="section">
+545:               <div className="section-header">
+546:                 <h2>Terminals</h2>
+547:                 <p>Manage system terminals</p>
+548:               </div>
+549:               <div className="empty-state">
+550:                 <p>No terminals connected</p>
+551:               </div>
+552:             </div>
+553:           )}
+554:           {activeMenu === 'csv' && <CsvAnalyticsPage />}
+555:           {activeMenu === 'settings' && <SettingsSection health={health} />}
+556:         </div>
+557:       </div>
+558:     </div>
+559:   );
+560: }
+561: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

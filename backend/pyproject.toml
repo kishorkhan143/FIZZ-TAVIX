@@ -1,0 +1,23 @@
+[project]
+name = "tavix-guard-backend"
+version = "1.0.0"
+description = "TAVIX Guard SOC Backend"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.6",
+    "uvicorn[standard]>=0.32.1",
+    "websockets>=13.1",
+    "sqlalchemy>=2.0.36",
+    "aiosqlite>=0.20.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+    "python-multipart>=0.0.18",
+    "python-dateutil>=2.9.0",
+    "resend>=2.49.1",
+    "PyJWT>=2.15.1",
+    "email-validator>=2.1.0",
+    "scikit-learn>=1.3.2",
+    "numpy>=1.24.3",
+    "joblib>=1.3.2",
+    "python-dotenv>=1.0.0",
+]

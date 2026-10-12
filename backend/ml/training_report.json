@@ -1,0 +1,83 @@
+{
+  "holdout": {
+    "NORMAL": {
+      "precision": 1.0,
+      "recall": 0.9714285714285714,
+      "f1-score": 0.9855072463768116,
+      "support": 175.0
+    },
+    "BRUTE_FORCE": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 175.0
+    },
+    "PASSWORD_SPRAY": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 175.0
+    },
+    "FAIL_THEN_SUCCESS": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 175.0
+    },
+    "AFTER_HOURS": {
+      "precision": 0.9722222222222222,
+      "recall": 1.0,
+      "f1-score": 0.9859154929577465,
+      "support": 175.0
+    },
+    "accuracy": 0.9942857142857143,
+    "macro avg": {
+      "precision": 0.9944444444444445,
+      "recall": 0.9942857142857143,
+      "f1-score": 0.9942845478669117,
+      "support": 875.0
+    },
+    "weighted avg": {
+      "precision": 0.9944444444444445,
+      "recall": 0.9942857142857143,
+      "f1-score": 0.9942845478669116,
+      "support": 875.0
+    }
+  },
+  "top_features": [
+    [
+      "fail_ratio",
+      0.1033
+    ],
+    [
+      "ctx_distinct_users_from_src",
+      0.0955
+    ],
+    [
+      "hour_cos",
+      0.0889
+    ],
+    [
+      "ctx_fail_users_from_src",
+      0.0801
+    ],
+    [
+      "n_fail",
+      0.0778
+    ],
+    [
+      "fails_before_first_success",
+      0.0685
+    ],
+    [
+      "max_consec_fail",
+      0.0599
+    ],
+    [
+      "after_hours_success",
+      0.0599
+    ]
+  ],
+  "train_samples": 3500,
+  "note": "Metrics are on SYNTHETIC data and are optimistic."
+}

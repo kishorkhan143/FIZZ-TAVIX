@@ -1,0 +1,41 @@
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Env & secrets
+.env
+*.env
+backend/.env
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Frontend
+node_modules/
+dist/
+.vite/
+buildlog.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# ML model (large binary — track with Git LFS if needed)
+backend/ml/model.joblib
+
+# uv lock (optional — keep for reproducibility)
+# uv.lock
