@@ -1,0 +1,118 @@
+# AuthSentinel Risk Scoring Configuration
+# All parameters tunable for calibration and lab settings
+
+# Exponential decay
+half_life_seconds: 600
+lookback_seconds: 3600
+
+# Risk bands (display purposes)
+risk_bands:
+  NORMAL: [0, 29]
+  WATCH: [30, 59]
+  SUSPICIOUS: [60, 79]
+  HIGH_RISK: [80, 100]
+
+# Incident lifecycle thresholds
+incident_threshold: 60  # Open incident when score reaches this
+cool_threshold: 30      # Mark as COOLED when score drops below this
+
+# Signal coefficients and propagation
+signals:
+  failure_count:
+    enabled: true
+    base_coefficient: 1.0
+    propagation:
+      PAIR: 1.0
+      ACCOUNT: 0.6
+      COMPUTER: 0.3
+      SOURCE: 0.5
+  
+  failure_velocity:
+    enabled: true
+    base_coefficient: 2.0
+    window_seconds: 60
+    propagation:
+      PAIR: 1.0
+      ACCOUNT: 0.5
+      COMPUTER: 0.4
+      SOURCE: 0.6
+  
+  burstiness:
+    enabled: true
+    base_coefficient: 3.0
+    burst_threshold: 3
+    short_window_seconds: 30
+    propagation:
+      PAIR: 1.0
+      ACCOUNT: 0.4
+      COMPUTER: 0.3
+      SOURCE: 0.7
+  
+  gap_compression:
+    enabled: true
+    base_coefficient: 2.5
+    min_failures: 3
+    propagation:
+      PAIR: 1.0
+      ACCOUNT: 0.5
+      COMPUTER: 0.3
+      SOURCE: 0.4
+  
+  success_after_failures:
+    enabled: true
+    base_coefficient: 2.0
+    lookback_seconds: 300
+    propagation:
+      PAIR: 1.0
+      ACCOUNT: 0.7
+      COMPUTER: 0.3
+      SOURCE: 0.5
+  
+  multi_computer:
+    enabled: true
+    base_coefficient: 1.5
+    propagation:
+      ACCOUNT: 1.0
+      SOURCE: 0.8
+      COMPUTER: 0.2
+      PAIR: 0.5
+  
+  password_spray:
+    enabled: true
+    base_coefficient: 4.0
+    threshold: 5
+    propagation:
+      SOURCE: 1.0
+      COMPUTER: 0.8
+      ACCOUNT: 0.3
+      PAIR: 0.2
+  
+  after_hours_success:
+    enabled: true
+    base_coefficient: 2.0
+    lab_hours_start: 8
+    lab_hours_end: 18
+    propagation:
+      ACCOUNT: 1.0
+      COMPUTER: 0.7
+      PAIR: 0.5
+      SOURCE: 0.4
+  
+  unusual_computer:
+    enabled: true
+    base_coefficient: 1.5
+    propagation:
+      ACCOUNT: 1.0
+      PAIR: 0.8
+      COMPUTER: 0.3
+      SOURCE: 0.2
+
+# Entity types
+entity_types:
+  - ACCOUNT
+  - COMPUTER
+  - PAIR
+  - SOURCE
+
+# Lab timezone
+timezone: "America/New_York"

@@ -1,0 +1,133 @@
+@import "tailwindcss";
+@import './styles/ios-motion.css';
+
+/* ═══════════════════════════════════════════════════════════════
+   AuthSentinel — Light Mode Design System
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Light Mode Colors ────────────────────────────────────────– */
+  --bg-primary:     #ffffff;
+  --bg-secondary:   #f9fafb;
+  --bg-tertiary:    #f3f4f6;
+  --bg-card:        #ffffff;
+  
+  --border-light:   #e5e7eb;
+  --border-normal:  #d1d5db;
+  --border-dark:    #9ca3af;
+
+  /* ── Brand ────────────────────────────────────────────────────– */
+  --accent:         #0066ff;
+  --accent-light:   #e0efff;
+  --accent-hover:   #0052cc;
+  --accent-faint:   #f0f5ff;
+
+  /* ── Status Colors ────────────────────────────────────────────– */
+  --success:        #10b981;
+  --success-light:  #ecfdf5;
+  --error:          #ef4444;
+  --error-light:    #fee2e2;
+  --warning:        #f59e0b;
+  --warning-light:  #fffbeb;
+  --info:           #3b82f6;
+  --info-light:     #eff6ff;
+
+  /* ── Text Colors ──────────────────────────────────────────────– */
+  --text-primary:   #1f2937;
+  --text-secondary: #4b5563;
+  --text-tertiary:  #9ca3af;
+  --text-muted:     #d1d5db;
+
+  /* ── Fonts ────────────────────────────────────────────────────– */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', monospace;
+
+  /* ── Spacing ──────────────────────────────────────────────────– */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  18px;
+  --radius-2xl: 24px;
+
+  /* ── Animations ───────────────────────────────────────────────– */
+  --transition-fast:  var(--ios-duration-fast, 0.18s) var(--ios-ease, cubic-bezier(0.22, 1, 0.36, 1));
+  --transition-base:  var(--ios-duration-normal, 0.26s) var(--ios-ease, cubic-bezier(0.22, 1, 0.36, 1));
+  --transition-slow:  var(--ios-duration-smooth, 0.34s) var(--ios-spring-soft, cubic-bezier(0.16, 1, 0.3, 1));
+
+  /* ── Shadows ──────────────────────────────────────────────────– */
+  --shadow-sm:   0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md:   0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg:   0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl:   0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="dark"] {
+  /* ── Dark Mode Colors ────────────────────────────────────────– */
+  --bg-primary:     #0c101c;
+  --bg-secondary:   #131a2c;
+  --bg-tertiary:    #1c253c;
+  --bg-card:        #131a2c;
+
+  --border-light:   #1e293b;
+  --border-normal:  #334155;
+  --border-dark:    #475569;
+
+  --accent:         #3b82f6;
+  --accent-light:   rgba(59, 130, 246, 0.16);
+  --accent-hover:   #60a5fa;
+  --accent-faint:   rgba(59, 130, 246, 0.08);
+
+  --text-primary:   #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-tertiary:  #94a3b8;
+  --text-muted:     #475569;
+
+  --shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md:   0 4px 8px rgba(0, 0, 0, 0.45);
+  --shadow-lg:   0 10px 20px rgba(0, 0, 0, 0.5);
+  --shadow-xl:   0 20px 30px rgba(0, 0, 0, 0.6);
+}
+
+/* ── Reset ────────────────────────────────────────────────────────– */
+*, *::before, *::after { 
+  box-sizing: border-box; 
+  margin: 0; 
+  padding: 0; 
+}
+
+html { 
+  font-size: 14px; 
+  height: 100%;
+  -webkit-font-smoothing: antialiased; 
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  height: 100%;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────– */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb { 
+  background: var(--border-light); 
+  border-radius: 4px;
+  border: 2px solid var(--bg-secondary);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--border-normal); }
+
+/* ── Animations ───────────────────────────────────────────────────– */
+/* All animations are now handled by motion/react library */
+/* Removed CSS keyframes: fade-in, slide-in-left, slide-in-up, scale-in */

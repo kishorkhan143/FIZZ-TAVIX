@@ -1,0 +1,226 @@
+/* ═══════════════════════════════════════════════════════════════
+   CustomSelect — Styled Dropdown Component
+   Matches TAVIX GUARD dashboard theme with blue/aqua gradient
+   ═══════════════════════════════════════════════════════════════ */
+
+.custom-select-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.custom-select-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary, #6b7280);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.custom-select-container {
+  position: relative;
+  width: 100%;
+}
+
+.custom-select-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #1f2937);
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-normal, #d1d5db);
+  border-radius: 8px;
+  cursor: pointer;
+  /* explicit properties — no transition: all */
+  transition: border-color var(--ios-duration-fast, 0.18s) var(--ios-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+              box-shadow var(--ios-duration-fast, 0.18s) var(--ios-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+              background-color var(--ios-duration-fast, 0.18s) var(--ios-ease, cubic-bezier(0.22, 1, 0.36, 1));
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+  position: relative;
+  z-index: 10;
+}
+
+.custom-select-button:hover:not(:disabled) {
+  border-color: var(--accent, #0066ff);
+  box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.08);
+  background: var(--bg-secondary, #f9fafb);
+}
+
+.custom-select-button:focus {
+  outline: none;
+  border-color: var(--accent, #0066ff);
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.15);
+}
+
+.custom-select-container.open .custom-select-button {
+  border-color: var(--accent, #0066ff);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.15);
+}
+
+.custom-select-button:disabled,
+.custom-select-container.disabled .custom-select-button {
+  background: var(--bg-tertiary, #f3f4f6);
+  color: var(--text-tertiary, #9ca3af);
+  cursor: not-allowed;
+  border-color: var(--border-light, #e5e7eb);
+}
+
+.custom-select-value {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-select-chevron {
+  flex-shrink: 0;
+  color: var(--text-secondary, #6b7280);
+  transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+.custom-select-button:hover:not(:disabled) .custom-select-chevron {
+  color: var(--accent, #0066ff);
+}
+
+/* ── Dropdown Menu ─────────────────────────────────────────────────────────── */
+/* Dropdown menu — entrance/exit animation handled by motion/react AnimatePresence */
+.custom-select-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  width: 100%;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--accent, #0066ff);
+  border-top: none;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  box-shadow: 0 16px 36px -6px rgba(0, 102, 255, 0.16), 0 0 0 1px rgba(0, 102, 255, 0.08);
+  z-index: 1000;
+  max-height: 320px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* NO CSS animation here — motion handles open/close */
+  transform-origin: top center;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+}
+
+.custom-select-header {
+  padding: 8px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-tertiary, #9ca3af);
+  background: linear-gradient(to right, rgba(0, 102, 255, 0.03), rgba(0, 180, 216, 0.03));
+  border-bottom: 1px solid var(--border-light, #e5e7eb);
+  position: sticky;
+  top: 0;
+}
+
+.custom-select-options {
+  padding: 4px;
+}
+
+.custom-select-empty {
+  padding: 16px 12px;
+  text-align: center;
+  color: var(--text-tertiary, #9ca3af);
+  font-size: 12px;
+}
+
+/* ── Select Options ────────────────────────────────────────────────────────── */
+.custom-select-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary, #1f2937);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  /* explicit — no transition: all */
+  transition: background-color var(--ios-duration-fast, 0.18s) var(--ios-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+              color var(--ios-duration-fast, 0.18s) var(--ios-ease, cubic-bezier(0.22, 1, 0.36, 1));
+  border-radius: 6px;
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+  position: relative;
+}
+
+.custom-select-option:hover {
+  background: var(--bg-tertiary, #f3f4f6);
+  color: var(--text-primary, #1f2937);
+}
+
+.custom-select-option.selected {
+  background: linear-gradient(135deg, rgba(0, 102, 255, 0.1) 0%, rgba(0, 180, 216, 0.08) 100%);
+  color: var(--accent, #0066ff);
+  font-weight: 600;
+}
+
+.custom-select-option.selected:hover {
+  background: linear-gradient(135deg, rgba(0, 102, 255, 0.15) 0%, rgba(0, 180, 216, 0.12) 100%);
+}
+
+.option-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-normal, #d1d5db);
+  flex-shrink: 0;
+  transition: background-color var(--ios-duration-fast, 0.18s) var(--ios-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+              width var(--ios-duration-fast, 0.18s) var(--ios-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+              height var(--ios-duration-fast, 0.18s) var(--ios-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.custom-select-option:hover .option-dot {
+  background: var(--accent, #0066ff);
+}
+
+.custom-select-option.selected .option-dot {
+  background: linear-gradient(135deg, #0066ff 0%, #00b4d8 50%, #00f5ff 100%);
+  width: 10px;
+  height: 10px;
+}
+
+.option-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Scrollbar Styling ─────────────────────────────────────────────────────── */
+.custom-select-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-select-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-select-menu::-webkit-scrollbar-thumb {
+  background: var(--border-normal, #d1d5db);
+  border-radius: 3px;
+  transition: background var(--transition-fast);
+}
+
+.custom-select-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--accent, #0066ff);
+}

@@ -1,0 +1,36 @@
+.risk-gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.risk-gauge-small {
+  width: 80px;
+}
+
+.risk-gauge-medium {
+  width: 120px;
+}
+
+.risk-gauge-large {
+  width: 160px;
+}
+
+.gauge-svg {
+  width: 100%;
+  height: auto;
+}
+
+.gauge-text {
+  font-size: 24px;
+  font-weight: bold;
+  fill: #1f2937;
+}
+
+.gauge-band {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}

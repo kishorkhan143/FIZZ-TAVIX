@@ -1,0 +1,224 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   TAVIX GUARD — Premium iOS Motion Design System
+   Tokens, easing curves, and CSS-only interactions.
+   All entrance/exit animations are handled by motion/react — no double-animation.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── iOS Physics & Timing Curves ─────────────────────────────────────── */
+  --ios-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ios-spring: cubic-bezier(0.175, 0.885, 0.32, 1.15);
+  --ios-spring-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --ios-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ── iOS Motion Timing Scale ─────────────────────────────────────────── */
+  --ios-duration-micro: 130ms;
+  --ios-duration-fast: 180ms;
+  --ios-duration-base: 180ms;
+  --ios-duration-normal: 260ms;
+  --ios-duration-smooth: 340ms;
+  --ios-duration-page: 300ms;
+  --ios-duration-skeleton: 1500ms;
+
+  /* ── iOS Elevated Shadows ───────────────────────────────────────────── */
+  --ios-shadow-subtle: 0 2px 6px -1px rgba(0, 0, 0, 0.05), 0 1px 3px -1px rgba(0, 0, 0, 0.03);
+  --ios-shadow-card: 0 4px 16px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+  --ios-shadow-card-hover: 0 12px 28px -4px rgba(0, 102, 255, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.06);
+  --ios-shadow-popover: 0 16px 36px -6px rgba(0, 0, 0, 0.15), 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+  --ios-shadow-modal: 0 24px 60px -12px rgba(0, 0, 0, 0.25), 0 8px 24px -4px rgba(0, 0, 0, 0.1);
+}
+
+/* ── 1. Smooth Native Scrolling — only on html, NOT on * ──────────────── */
+/* Applying scroll-behavior: smooth to * causes jank in overflow containers */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ── 2. iOS Tap Feedback — CSS transitions only, no conflicting transforms ── */
+/* motion/react handles scale/translate on whileTap/whileHover.              */
+/* Here we only set up the non-transform properties and hardware acceleration. */
+button:not(:disabled),
+.btn-primary:not(:disabled),
+.btn-secondary:not(:disabled),
+.nav-item,
+.admin-btn,
+.date-filter-pill,
+.tab-btn,
+.view-btn,
+.custom-select-button:not(:disabled),
+.modal-close-btn,
+.btn-back-to-live {
+  -webkit-tap-highlight-color: transparent;
+  /* GPU layer for the elements motion will animate */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  transition: background-color var(--ios-duration-fast) var(--ios-ease),
+              border-color var(--ios-duration-fast) var(--ios-ease),
+              color var(--ios-duration-fast) var(--ios-ease),
+              opacity var(--ios-duration-fast) var(--ios-ease);
+  /* do NOT include transform or box-shadow here — motion handles those */
+}
+
+/* ── 3. Page container — NO CSS animation; motion handles entrance/exit ── */
+.ios-page-container {
+  width: 100%;
+  /* will-change is set only when motion is actively animating */
+}
+
+/* ── 4. Staggered Delays (used only on elements not already managed by motion) ── */
+.ios-stagger-1 { animation-delay: 30ms !important; }
+.ios-stagger-2 { animation-delay: 60ms !important; }
+.ios-stagger-3 { animation-delay: 90ms !important; }
+.ios-stagger-4 { animation-delay: 120ms !important; }
+.ios-stagger-5 { animation-delay: 150ms !important; }
+.ios-stagger-6 { animation-delay: 180ms !important; }
+
+/* ── 5. Cards & Panels — only non-transform CSS properties ─────────────── */
+/* motion/react handles translateY on whileHover for stat-card             */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow var(--ios-duration-normal) var(--ios-ease),
+              border-color var(--ios-duration-normal) var(--ios-ease),
+              background-color var(--ios-duration-normal) var(--ios-ease);
+}
+
+.stat-card .stat-icon {
+  transition: transform var(--ios-duration-normal) var(--ios-spring);
+}
+
+.stat-card:hover .stat-icon {
+  transform: scale(1.1) rotate(-3deg);
+}
+
+.events-panel,
+.alerts-panel,
+.telemetry-panel,
+.settings-card {
+  transition: box-shadow var(--ios-duration-normal) var(--ios-ease),
+              border-color var(--ios-duration-normal) var(--ios-ease);
+}
+
+.events-panel:hover,
+.alerts-panel:hover,
+.telemetry-panel:hover,
+.settings-card:hover {
+  box-shadow: var(--ios-shadow-card);
+}
+
+/* ── 6. Table & List Row Hover — NO transform (motion handles layout) ───── */
+.event-row,
+.alert-row,
+.data-table tbody tr {
+  position: relative;
+  /* Only background-color transition; transform is owned by motion layout  */
+  transition: background-color var(--ios-duration-fast) var(--ios-ease);
+}
+
+/* ── 7. Modals & Overlays — NO CSS animation; motion handles entrance/exit  */
+.modal-backdrop {
+  background: rgba(255, 255, 255, 0.68) !important;
+  backdrop-filter: blur(18px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(180%) !important;
+}
+
+.modal-dialog {
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  box-shadow: 0 20px 48px -10px rgba(15, 23, 42, 0.16) !important;
+}
+
+.modal-close-btn {
+  transition: transform var(--ios-duration-fast) var(--ios-spring),
+              color var(--ios-duration-fast) var(--ios-ease),
+              background-color var(--ios-duration-fast) var(--ios-ease);
+}
+
+.modal-close-btn:hover {
+  transform: rotate(90deg) scale(1.1);
+}
+
+/* ── 8. Dropdowns — NO CSS animation; motion handles entrance/exit ──────── */
+.custom-select-menu,
+.export-dropdown-menu,
+.dropdown-menu {
+  /* NO animation here; motion handles it */
+  transform-origin: top center;
+  box-shadow: var(--ios-shadow-popover) !important;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+}
+
+.custom-select-option,
+.export-dropdown-item {
+  transition: background-color var(--ios-duration-fast) var(--ios-ease),
+              color var(--ios-duration-fast) var(--ios-ease),
+              transform var(--ios-duration-fast) var(--ios-ease);
+}
+
+.custom-select-option:hover,
+.export-dropdown-item:hover {
+  transform: translateX(3px);
+}
+
+/* ── 9. Form Inputs ─────────────────────────────────────────────────────── */
+input[type="text"],
+input[type="date"],
+input[type="search"],
+textarea,
+select {
+  transition: border-color var(--ios-duration-fast) var(--ios-ease),
+              box-shadow var(--ios-duration-fast) var(--ios-ease),
+              background-color var(--ios-duration-fast) var(--ios-ease);
+  /* No transform — avoids layout shifts on focus */
+}
+
+input[type="text"]:focus,
+input[type="date"]:focus,
+input[type="search"]:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.18) !important;
+}
+
+/* ── 10. Badges ─────────────────────────────────────────────────────────── */
+.badge {
+  transition: transform var(--ios-duration-micro) var(--ios-spring),
+              background-color var(--ios-duration-fast) var(--ios-ease);
+}
+
+.panel-header:hover .badge {
+  transform: scale(1.08);
+}
+
+/* ── 11. Skeleton & Loading States ─────────────────────────────────────── */
+@keyframes iosShimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.ios-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(229, 231, 235, 0.7) 0%,
+    rgba(243, 244, 246, 0.9) 50%,
+    rgba(229, 231, 235, 0.7) 100%
+  );
+  background-size: 200% 100%;
+  animation: iosShimmer var(--ios-duration-skeleton) infinite linear;
+  border-radius: var(--radius-md);
+}
+
+/* ── 12. Accessible Reduced Motion ──────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

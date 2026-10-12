@@ -1,0 +1,708 @@
+/**
+ * LoginPage.css — TAVIX GUARD Premium Cybersecurity Authentication UI
+ * ====================================================================
+ * Design System Tokens:
+ * - Primary Background:   #06152E
+ * - Secondary Navy:       #0B1F43
+ * - Electric Blue:        #168BFF
+ * - Cyan Accent:          #00D4FF
+ * - Purple Gradient:      #713CFF
+ * - Main Text:            #13264A
+ * - Muted Text:           #7183A5
+ * - Light Background:     #F5F9FF
+ * - Borders:              #D5E2F5
+ */
+
+/* ─────────────────────────────────────────────────────────────
+   1. Root Page Container — Full Split-Screen Layout
+   ───────────────────────────────────────────────────────────── */
+.login-split-page {
+  display: flex;
+  width: 100vw;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: #F5F9FF;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
+  color: #13264A;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   2. Left Panel — TAVIX GUARD Branding (47% width)
+   ───────────────────────────────────────────────────────────── */
+.login-brand-panel {
+  flex: 0 0 47%;
+  width: 47%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: linear-gradient(165deg, #06152E 0%, #091c3d 50%, #0B1F43 100%);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 48px 40px 24px 40px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-right: 1px solid rgba(0, 212, 255, 0.12);
+  box-shadow: 4px 0 24px rgba(6, 21, 46, 0.35);
+}
+
+/* Ambient cyber background effects */
+.brand-cyber-grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(to right, rgba(0, 212, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 212, 255, 0.04) 1px, transparent 1px);
+  background-size: 36px 36px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.brand-glow-sphere {
+  position: absolute;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 460px;
+  height: 460px;
+  background: radial-gradient(circle, rgba(22, 139, 255, 0.22) 0%, rgba(0, 212, 255, 0.08) 50%, transparent 70%);
+  filter: blur(48px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.brand-radial-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 85%, rgba(0, 212, 255, 0.14) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Top Branding Section */
+.brand-top-section {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  max-width: 480px;
+  margin-top: 16px;
+}
+
+/* Prominent Shield Logo */
+.brand-logo-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.brand-shield-halo {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.4) 0%, rgba(22, 139, 255, 0.15) 60%, transparent 80%);
+  filter: blur(14px);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.brand-shield-logo {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 8px 24px rgba(0, 212, 255, 0.35));
+  transition: transform 0.3s ease;
+}
+
+.brand-shield-logo:hover {
+  transform: scale(1.04);
+}
+
+/* Typography */
+.brand-text-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.brand-main-title {
+  margin: 0 0 8px 0;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.15;
+}
+
+.brand-title-tavix {
+  color: #FFFFFF;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.brand-title-guard {
+  color: #168BFF;
+  text-shadow: 0 0 20px rgba(22, 139, 255, 0.6);
+}
+
+.brand-subtitle {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #00D4FF;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  opacity: 0.95;
+}
+
+.brand-cyan-divider {
+  width: 48px;
+  height: 3px;
+  background: linear-gradient(90deg, #168BFF 0%, #00D4FF 100%);
+  border-radius: 3px;
+  margin: 16px 0 14px 0;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.7);
+}
+
+.brand-description {
+  margin: 0;
+  max-width: 400px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #A5B8D8;
+  font-weight: 400;
+}
+
+/* Bottom Section: Digital Globe & Floating Badges */
+.brand-bottom-section {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 540px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: auto;
+}
+
+.digital-globe-wrapper {
+  position: relative;
+  width: 100%;
+  height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.digital-globe-svg {
+  width: 100%;
+  height: 100%;
+  max-height: 250px;
+  overflow: visible;
+  filter: drop-shadow(0 0 16px rgba(0, 212, 255, 0.18));
+}
+
+/* Floating Glass Badges */
+.floating-badge {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(11, 31, 67, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 212, 255, 0.32);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #E0F2FE;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3), 0 0 10px rgba(0, 212, 255, 0.15);
+  animation: floatSlow 4s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.floating-badge span {
+  letter-spacing: 0.3px;
+}
+
+.badge-lock {
+  top: 18%;
+  left: 6%;
+  animation-delay: 0s;
+}
+
+.badge-shield {
+  top: 8%;
+  right: 12%;
+  animation-delay: 1.2s;
+}
+
+.badge-server {
+  bottom: 22%;
+  left: 10%;
+  animation-delay: 2.1s;
+}
+
+.badge-monitor {
+  bottom: 28%;
+  right: 6%;
+  animation-delay: 0.8s;
+}
+
+@keyframes floatSlow {
+  0% {
+    transform: translateY(0px);
+  }
+  100% {
+    transform: translateY(-6px);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   3. Right Panel — Authentication UI (53% width)
+   ───────────────────────────────────────────────────────────── */
+.login-auth-panel {
+  flex: 0 0 53%;
+  width: 53%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: #F5F9FF;
+  background-image: radial-gradient(circle at 50% 20%, rgba(22, 139, 255, 0.05) 0%, transparent 60%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* Large, Elegant White Authentication Card */
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  background: #FFFFFF;
+  border-radius: 24px;
+  border: 1px solid #D5E2F5;
+  box-shadow: 
+    0 20px 48px rgba(19, 38, 74, 0.08),
+    0 4px 16px rgba(22, 139, 255, 0.04);
+  padding: 44px 38px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 2;
+}
+
+/* Card Top: Smaller Shield Logo */
+.auth-card-logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.auth-card-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(22, 139, 255, 0.2));
+}
+
+/* Card Heading & Subtitle */
+.auth-card-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.auth-card-title {
+  margin: 0 0 6px 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  line-height: 1.25;
+}
+
+.title-welcome {
+  color: #13264A;
+}
+
+.title-brand {
+  color: #168BFF;
+}
+
+.auth-card-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #7183A5;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+/* Form Layout */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.auth-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.auth-label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #13264A;
+  letter-spacing: -0.1px;
+}
+
+.auth-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.auth-input-icon {
+  position: absolute;
+  left: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94A3B8;
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.auth-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px 0 44px;
+  background-color: #FFFFFF;
+  border: 1.5px solid #D5E2F5;
+  border-radius: 12px;
+  font-size: 14.5px;
+  color: #13264A;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.auth-input::placeholder {
+  color: #94A3B8;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: #168BFF;
+  box-shadow: 0 0 0 3.5px rgba(22, 139, 255, 0.15);
+  background-color: #FFFFFF;
+}
+
+.auth-input:focus ~ .auth-input-icon,
+.auth-input-wrapper:focus-within .auth-input-icon {
+  color: #168BFF;
+}
+
+/* Error Alert */
+.auth-error-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 18px;
+  font-size: 13px;
+  color: #DC2626;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Primary Button: Blue to Purple Gradient */
+.btn-primary-gradient {
+  width: 100%;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #168BFF 0%, #713CFF 100%);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(22, 139, 255, 0.28);
+}
+
+.btn-primary-gradient:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(22, 139, 255, 0.38);
+}
+
+.btn-primary-gradient:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-primary-gradient:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Spinner inside button */
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Divider: "OR" */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 22px 0;
+  width: 100%;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background-color: #E2E8F0;
+}
+
+.divider-text {
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94A3B8;
+  letter-spacing: 0.5px;
+}
+
+/* Secondary Button: Sign in with Admin Authentication (Dark Navy) */
+.btn-admin-dark {
+  width: 100%;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background-color: #0B1F43;
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(11, 31, 67, 0.2);
+}
+
+.btn-admin-dark:hover:not(:disabled) {
+  background-color: #06152E;
+  border-color: rgba(0, 212, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(11, 31, 67, 0.35);
+}
+
+.btn-admin-dark:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-admin-dark:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Security Footer Note */
+.auth-security-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 22px;
+  font-size: 12px;
+  color: #7183A5;
+  text-align: center;
+}
+
+.auth-security-footer svg {
+  color: #168BFF;
+  flex-shrink: 0;
+}
+
+/* Success Confirmation Box */
+.auth-success-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.success-badge-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.success-title {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #065F46;
+}
+
+.success-desc {
+  margin: 0 0 24px 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #475569;
+}
+
+.btn-secondary-link {
+  background: none;
+  border: none;
+  color: #168BFF;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 6px 12px;
+  transition: color 0.2s ease;
+}
+
+.btn-secondary-link:hover {
+  color: #713CFF;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   4. Responsive Breakpoints
+   ───────────────────────────────────────────────────────────── */
+
+/* Tablet (max-width: 980px) */
+@media (max-width: 980px) {
+  .login-brand-panel {
+    flex: 0 0 44%;
+    width: 44%;
+    padding: 36px 24px 20px 24px;
+  }
+
+  .login-auth-panel {
+    flex: 0 0 56%;
+    width: 56%;
+    padding: 32px 20px;
+  }
+
+  .brand-main-title {
+    font-size: 28px;
+  }
+
+  .brand-shield-logo {
+    width: 72px;
+    height: 72px;
+  }
+
+  .brand-shield-halo {
+    width: 90px;
+    height: 90px;
+  }
+
+  .digital-globe-wrapper {
+    height: 200px;
+  }
+
+  .auth-card {
+    padding: 36px 28px;
+  }
+}
+
+/* Mobile & Small Tablets (max-width: 768px) */
+@media (max-width: 768px) {
+  .login-split-page {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .login-brand-panel {
+    flex: none;
+    width: 100%;
+    min-height: auto;
+    padding: 36px 20px 28px 20px;
+    border-right: none;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.15);
+  }
+
+  .brand-top-section {
+    margin-top: 0;
+  }
+
+  .brand-bottom-section {
+    display: none; /* Hide bottom heavy SVG on small mobile viewports to prevent overflow */
+  }
+
+  .brand-main-title {
+    font-size: 26px;
+  }
+
+  .brand-description {
+    font-size: 13px;
+    max-width: 320px;
+  }
+
+  .login-auth-panel {
+    flex: 1;
+    width: 100%;
+    min-height: auto;
+    padding: 28px 16px 40px 16px;
+  }
+
+  .auth-card {
+    max-width: 100%;
+    border-radius: 20px;
+    padding: 32px 22px;
+    box-shadow: 0 10px 30px rgba(19, 38, 74, 0.06);
+  }
+
+  .auth-card-title {
+    font-size: 21px;
+  }
+}
