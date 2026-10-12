@@ -1,556 +1,691 @@
-# Implementation Plan — ML Integration for TAVIX Guard CSV Analytics
+# TAVIX GUARD iOS Motion Upgrade — Implementation Plan
 
-## Pre-read findings
-
-- **`models.py`** — `CsvAlert` already has all ML columns (`ml_prediction`, `ml_risk`,
-  `ml_confidence`, `ml_review_label`, `suggested_step`, `class_probabilities`, `evidence`,
-  `anomaly_score`, `source`) and `to_dict()` already returns them. **No schema migration needed.**
-- **`requirements.txt`** — `scikit-learn==1.3.2`, `numpy==1.24.3`, `joblib==1.3.2` are already
-  present. **No pip changes needed.**
-- **`predictor.py`** — `predict(records)` groups records into `(user, ip)` session windows and
-  returns one dict per window. Key fields: `user`, `ip`, `event_ids` (list of `row_number`),
-  `prediction`, `review_label`, `ml_risk`, `confidence`, `anomaly_score`,
-  `class_probabilities`, `evidence`, `suggested_human_step`, `first_seen`, `last_seen`.
-  `_merge_sprays` is called internally, so PASSWORD_SPRAY from the same IP arrives already
-  collapsed (one entry, `user = "N accounts"`).
-- **`service.py`** — ML hook goes at line ~250 right after step 7 (`alerts_list =
-  SecurityDetector.detect_alerts(...)`). The bulk-save block at step 9 constructs `CsvAlert`
-  objects with hard-coded fields — the ML fields must be added there.
-- **`router.py`** — `get_csv_alerts` at line ~86 is clean; `source` query param must be added
-  and threaded through to `get_alerts()`.
-- **`CsvAlertsExplorer.jsx`** — 6-column table; "ML Review" column and "Source" filter go in
-  without touching any existing columns.
-- **`CsvAlertDetailsModal.jsx`** — "ML Analysis" section appended after "Why this was flagged"
-  block, guarded by `alert.source === 'ML' || alert.source === 'RULE+ML'`.
-- **`sample_security_events.csv`** — 20 rows; david has 6 rapid failures (BRUTE_FORCE), bob has
-  4 failures then success (FAIL_THEN_SUCCESS), user1–4 from 198.51.100.50 are spray targets,
-  alice and charlie have a single success each (NORMAL).
+**Design**: motion-design.md (with H2, H3, H4, H5, M1-M3, N1-N4 findings resolved)  
+**Status**: Ready for implementation  
+**Workspace**: `c:\Users\wwwki\OneDrive\Desktop\cyber hacks\TAVIX-GAURD\Working prototype\log\frontend`
 
 ---
 
-## Ordered Steps
-
-- [ ] 1. **`service.py` — Add ML predict() call with try/except after detect_alerts**
-
-  Immediately after `alerts_list = SecurityDetector.detect_alerts(import_id=import_id, records=valid_records)`
-  (step 7, ~line 250), insert the following logic:
-
-  ```python
-  # --- ML Prediction (safe, never crashes upload) ---
-  try:
-      from ml.predictor import predict as ml_predict
-      ml_findings = ml_predict(valid_records)
-      ml_findings = [f for f in ml_findings if f.get("prediction") != "NORMAL"]
-  except Exception as ml_err:
-      logger.warning(f"ML predictor skipped: {ml_err}")
-      ml_findings = []
-  ```
-
-  Safety rule: this is inside try/except; any missing model.joblib, import error, or runtime
-  error silently downgrades to rule-only mode.
-
-  File: `backend/csv_analytics/service.py`
-  Verify: `cd backend && python -m pytest tests/test_csv_analytics.py -q` — existing tests
-  still pass (they don't exercise ML but the import must not break them).
-
-- [ ] 2. **`service.py` — Add merge logic: produce final `alerts_list` with ML fields populated**
-
-  Directly after the try/except block from step 1, add the merge function:
-
-  ```python
-  # Build lookup: rule alerts keyed by (user, ip)
-  def _overlapping(ids_a, ids_b):
-      return bool(set(ids_a) & set(ids_b))
-
-  rule_lookup = {}   # (user, ip) -> alert dict index in alerts_list
-  for idx, a in enumerate(alerts_list):
-      rule_lookup[(a["user"], a["ip"])] = idx
-
-  for finding in ml_findings:
-      f_user = finding.get("user", "")
-      f_ip   = finding.get("ip", "")
-      f_ids  = finding.get("event_ids", [])
-      match_idx = rule_lookup.get((f_user, f_ip))
-      if match_idx is not None and _overlapping(
-              alerts_list[match_idx].get("related_events", []), f_ids):
-          # Merge: augment existing rule alert
-          a = alerts_list[match_idx]
-          a["source"] = "RULE+ML"
-          a["ml_prediction"]     = finding["prediction"]
-          a["ml_risk"]           = finding["ml_risk"]
-          a["ml_confidence"]     = finding["confidence"]
-          a["ml_review_label"]   = finding["review_label"]
-          a["suggested_step"]    = finding["suggested_human_step"]
-          a["class_probabilities"] = finding["class_probabilities"]
-          a["evidence"]          = finding["evidence"]
-          a["anomaly_score"]     = finding["anomaly_score"]
-      else:
-          # New ML-only alert
-          ml_alert = {
-              "id": str(uuid.uuid4())[:8],
-              "import_id": import_id,
-              "alert_type": finding["prediction"],
-              "severity": "HIGH" if finding["ml_risk"] >= 70 else (
-                           "MEDIUM" if finding["ml_risk"] >= 40 else "LOW"),
-              "risk_score": finding["ml_risk"],
-              "user": f_user,
-              "ip": f_ip,
-              "country": (valid_records[0].get("country") if valid_records else None),
-              "message": finding["review_label"],
-              "first_seen": finding["first_seen"],
-              "last_seen": finding["last_seen"],
-              "event_count": len(f_ids),
-              "failed_count": finding.get("evidence", {}).get("failures", 0),
-              "time_window_seconds": int(
-                  (finding["last_seen"] - finding["first_seen"]).total_seconds()
-                  if finding.get("last_seen") and finding.get("first_seen") else 0),
-              "status": "OPEN",
-              "reasons": [finding["review_label"]],
-              "related_events": f_ids,
-              "source": "ML",
-              "ml_prediction": finding["prediction"],
-              "ml_risk": finding["ml_risk"],
-              "ml_confidence": finding["confidence"],
-              "ml_review_label": finding["review_label"],
-              "suggested_step": finding["suggested_human_step"],
-              "class_probabilities": finding["class_probabilities"],
-              "evidence": finding["evidence"],
-              "anomaly_score": finding["anomaly_score"],
-              "created_at": datetime.now(timezone.utc),
-          }
-          alerts_list.append(ml_alert)
-  ```
-
-  Note: For PASSWORD_SPRAY spray-merged findings `user` is `"N accounts"` — keep as-is
-  (the predictor already merged them).
-
-  File: `backend/csv_analytics/service.py`
-  Verify: same as step 1 — `python -m pytest tests/test_csv_analytics.py -q` passes.
-
-- [ ] 3. **`service.py` — Update `high_risk_alerts` recompute and update `csv_import_obj` counts**
-
-  After the merge block (step 2), add:
-
-  ```python
-  # Recompute counts to include ML-only alerts
-  high_risk_alerts = [a for a in alerts_list if a["severity"] in ("CRITICAL", "HIGH")]
-  ```
-
-  Then update the two fields on `csv_import_obj` (already constructed further below) to use the
-  final `alerts_list` length. The `csv_import_obj` is constructed after this block at step 9;
-  change those two lines:
-
-  ```python
-  alerts_count=len(alerts_list),       # was already alerts_list; now reflects ML additions
-  high_risk_count=len(high_risk_alerts), # recomputed above
-  ```
-
-  (These lines in the existing code already use `alerts_list` and `high_risk_alerts` by name,
-  so no literal text change is needed here — only confirm they reference the recomputed
-  variables set above.)
-
-  File: `backend/csv_analytics/service.py`
-  Verify: `python -m pytest tests/test_csv_analytics.py -q`
-
-- [ ] 4. **`service.py` — Update bulk-save `db_alerts` to write all ML fields**
-
-  In the bulk-save block, replace the existing `CsvAlert(...)` construction to include all ML
-  fields. The current constructor omits `source`, `ml_prediction`, `ml_risk`, `ml_confidence`,
-  `ml_review_label`, `suggested_step`, `class_probabilities`, `evidence`, `anomaly_score`.
-
-  Replace the list comprehension for `db_alerts` with:
-
-  ```python
-  db_alerts = [
-      CsvAlert(
-          id=f"{import_id[:8]}-{a['id']}",
-          import_id=import_id,
-          alert_type=a["alert_type"],
-          severity=a["severity"],
-          risk_score=a["risk_score"],
-          user=a["user"],
-          ip=a["ip"],
-          country=a.get("country"),
-          message=a["message"],
-          first_seen=a["first_seen"],
-          last_seen=a["last_seen"],
-          event_count=a["event_count"],
-          failed_count=a["failed_count"],
-          time_window_seconds=a["time_window_seconds"],
-          status=a["status"],
-          reasons=json.dumps(a["reasons"]),
-          related_events=json.dumps(a.get("related_events", [])),
-          source=a.get("source", "RULE"),
-          ml_prediction=a.get("ml_prediction"),
-          ml_risk=a.get("ml_risk"),
-          ml_confidence=a.get("ml_confidence"),
-          ml_review_label=a.get("ml_review_label"),
-          suggested_step=a.get("suggested_step"),
-          class_probabilities=json.dumps(a["class_probabilities"])
-              if a.get("class_probabilities") else None,
-          evidence=json.dumps(a["evidence"])
-              if a.get("evidence") else None,
-          anomaly_score=a.get("anomaly_score"),
-          created_at=a["created_at"],
-      )
-      for a in alerts_list
-  ]
-  ```
-
-  File: `backend/csv_analytics/service.py`
-  Verify: `python -m pytest tests/test_csv_analytics.py -q` passes; no SQLAlchemy column errors.
-
-- [ ] 5. **`service.py` — Fix the alert `id` construction for ML-only alerts**
-
-  The bulk-save uses `f"{import_id[:8]}-{a['id']}"`. Rule alerts from `SecurityDetector` have
-  an `id` field (e.g. `"ALERT-001"`). ML-only alert dicts built in step 2 also have `"id"`
-  set to a UUID fragment. No change needed to the id line — just confirm the `id` key is
-  present in both paths (it is, per step 2 above).
-
-  File: `backend/csv_analytics/service.py`
-  Verify: manual smoke-check — upload `sample_security_events.csv` and confirm no key errors
-  in the response.
-
-- [ ] 6. **`router.py` — Add optional `source` query param to `GET /alerts`**
-
-  In `get_csv_alerts()`, add:
-
-  ```python
-  source: Optional[str] = Query(None, description="all | rule | ml | both"),
-  ```
-
-  Pass it through to the service:
-
-  ```python
-  alerts = CsvAnalyticsService.get_alerts(
-      import_id=import_id,
-      severity=severity,
-      status=status,
-      source=source,
-      db=db,
-  )
-  ```
-
-  File: `backend/csv_analytics/router.py`
-  Verify: FastAPI starts without errors; `GET /api/csv/alerts?source=ml` returns HTTP 200.
-
-- [ ] 7. **`service.py` — Add `source` filter to `get_alerts()`**
-
-  In `CsvAnalyticsService.get_alerts()`, add `source: Optional[str] = None` parameter, then
-  after the existing `status` filter block add:
-
-  ```python
-  if source and source.lower() not in ("all", ""):
-      if source.lower() == "rule":
-          stmt = stmt.where(CsvAlert.source == "RULE")
-      elif source.lower() == "ml":
-          stmt = stmt.where(CsvAlert.source.in_(["ML", "RULE+ML"]))
-      elif source.lower() == "both":
-          stmt = stmt.where(CsvAlert.source == "RULE+ML")
-  ```
-
-  File: `backend/csv_analytics/service.py`
-  Verify: `python -m pytest tests/test_csv_analytics.py -q` passes.
-
-- [ ] 8. **`CsvAlertsExplorer.jsx` — Add `sourceFilter` state and "Source" dropdown**
-
-  Add state:
-  ```js
-  const [sourceFilter, setSourceFilter] = useState('all');
-  ```
-
-  In the `fetchAlerts` URL builder, add:
-  ```js
-  if (sourceFilter !== 'all') url += `source=${sourceFilter}&`;
-  ```
-
-  Add `sourceFilter` to the `useCallback` dependency array.
-
-  In the filters bar, add a third `CustomSelect` after the Status dropdown:
-  ```jsx
-  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-      Source:
-    </span>
-    <CustomSelect
-      value={sourceFilter}
-      onChange={(e) => setSourceFilter(e.target.value)}
-      options={[
-        { value: 'all',  label: 'All' },
-        { value: 'rule', label: 'Rule Only' },
-        { value: 'ml',   label: 'ML Only' },
-        { value: 'both', label: 'Rule+ML' },
-      ]}
-      style={{ minWidth: '130px' }}
-    />
-  </div>
-  ```
-
-  File: `frontend/src/csv_analytics/CsvAlertsExplorer.jsx`
-  Verify: frontend compiles without errors (`npm run build` from `frontend/`).
-
-- [ ] 9. **`CsvAlertsExplorer.jsx` — Add "ML Review" column to the alerts table**
-
-  Change `<th>Risk Level</th>` to add one column after it:
-  ```jsx
-  <th>Risk Level</th>
-  <th>ML Review</th>
-  ```
-
-  Update the `colSpan` on the loading/empty rows from `"6"` to `"7"`.
-
-  In the table row, after the Risk Level `<td>`, add:
-  ```jsx
-  <td>
-    {(al.source === 'ML' || al.source === 'RULE+ML') && al.ml_review_label
-      ? (
-        <span style={{
-          fontSize: '11px',
-          fontWeight: 600,
-          padding: '2px 8px',
-          borderRadius: '100px',
-          background: al.ml_risk >= 70 ? '#ef4444'
-                    : al.ml_risk >= 40 ? '#f59e0b'
-                    : '#10b981',
-          color: '#fff',
-          whiteSpace: 'nowrap',
-        }}>
-          {al.ml_review_label}
-        </span>
-      )
-      : <span style={{ color: 'var(--text-tertiary)' }}>—</span>
-    }
-  </td>
-  ```
-
-  File: `frontend/src/csv_analytics/CsvAlertsExplorer.jsx`
-  Verify: frontend compiles; ML badge visible for ML/RULE+ML alerts, "—" for RULE alerts.
-
-- [ ] 10. **`CsvAlertDetailsModal.jsx` — Add "ML Analysis" section**
-
-  After the closing `</div>` of the `alert-flagged-section` block (the "Why this was flagged"
-  section), add the following JSX, guarded by the source check:
-
-  ```jsx
-  {/* ML Analysis — only shown when ML contributed to this alert */}
-  {(alert.source === 'ML' || alert.source === 'RULE+ML') && (
-    <div className="alert-flagged-section" style={{ marginTop: '12px' }}>
-      <h4 className="alert-flagged-heading">ML Analysis</h4>
-
-      <div className="alert-details-table">
-
-        {/* ML Prediction */}
-        <div className="alert-details-row">
-          <div className="alert-details-label">ML Prediction</div>
-          <div className="alert-details-value" style={{ fontWeight: 600 }}>
-            {alert.ml_prediction ? alert.ml_prediction.replace(/_/g, ' ') : '—'}
-          </div>
-        </div>
-
-        {/* ML Risk Score */}
-        <div className="alert-details-row">
-          <div className="alert-details-label">ML Risk Score</div>
-          <div className="alert-details-value">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{
-                flex: 1, height: '6px', borderRadius: '3px',
-                background: 'var(--border-light)', overflow: 'hidden',
-              }}>
-                <div style={{
-                  width: `${alert.ml_risk ?? 0}%`, height: '100%', borderRadius: '3px',
-                  background: (alert.ml_risk ?? 0) >= 70 ? '#ef4444'
-                            : (alert.ml_risk ?? 0) >= 40 ? '#f59e0b' : '#10b981',
-                }} />
-              </div>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', minWidth: '32px' }}>
-                {alert.ml_risk ?? '—'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Confidence */}
-        <div className="alert-details-row">
-          <div className="alert-details-label">Confidence</div>
-          <div className="alert-details-value">
-            {alert.ml_confidence != null
-              ? `${(alert.ml_confidence * 100).toFixed(1)}%`
-              : '—'}
-          </div>
-        </div>
-
-        {/* Review Label */}
-        <div className="alert-details-row">
-          <div className="alert-details-label">Review Label</div>
-          <div className="alert-details-value">{alert.ml_review_label ?? '—'}</div>
-        </div>
-
-        {/* Suggested Step */}
-        {alert.suggested_step && (
-          <div className="alert-details-row">
-            <div className="alert-details-label">Suggested Step</div>
-            <div className="alert-details-value" style={{ fontStyle: 'italic', color: 'var(--text-secondary)' }}>
-              {alert.suggested_step}
-            </div>
-          </div>
-        )}
-
-        {/* Time Span */}
-        {alert.first_seen && alert.last_seen && (() => {
-          const t0 = new Date(alert.first_seen);
-          const t1 = new Date(alert.last_seen);
-          const mins = Math.round((t1 - t0) / 60000);
-          return (
-            <div className="alert-details-row">
-              <div className="alert-details-label">Time Span</div>
-              <div className="alert-details-value" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
-                {fmtTime(alert.first_seen)} – {fmtTime(alert.last_seen)}
-                {mins > 0 && <span style={{ marginLeft: '6px', color: 'var(--text-tertiary)' }}>({mins} min)</span>}
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Event IDs */}
-        {Array.isArray(alert.related_events) && alert.related_events.length > 0 && (
-          <div className="alert-details-row">
-            <div className="alert-details-label">Event IDs</div>
-            <div className="alert-details-value" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
-              {alert.related_events.slice(0, 20).join(', ')}
-              {alert.related_events.length > 20 && ` … +${alert.related_events.length - 20} more`}
-            </div>
-          </div>
-        )}
-
-      </div>
-
-      {/* Evidence table */}
-      {alert.evidence && Object.keys(alert.evidence).length > 0 && (
-        <div style={{ marginTop: '8px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-            Evidence
-          </div>
-          <div className="alert-details-table">
-            {Object.entries(alert.evidence).map(([k, v]) => (
-              <div key={k} className="alert-details-row">
-                <div className="alert-details-label" style={{ fontSize: '11px' }}>
-                  {k.replace(/_/g, ' ')}
-                </div>
-                <div className="alert-details-value" style={{ fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
-                  {String(v)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Class Probabilities */}
-      {alert.class_probabilities && Object.keys(alert.class_probabilities).length > 0 && (
-        <div style={{ marginTop: '8px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-            Class Probabilities
-          </div>
-          <div className="alert-details-table">
-            {Object.entries(alert.class_probabilities)
-              .sort(([, a], [, b]) => b - a)
-              .map(([cls, prob]) => (
-                <div key={cls} className="alert-details-row">
-                  <div className="alert-details-label" style={{ fontSize: '11px' }}>
-                    {cls.replace(/_/g, ' ')}
-                  </div>
-                  <div className="alert-details-value" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '80px', height: '4px', borderRadius: '2px', background: 'var(--border-light)', overflow: 'hidden' }}>
-                      <div style={{ width: `${(prob * 100).toFixed(0)}%`, height: '100%', background: 'var(--accent-primary)', borderRadius: '2px' }} />
-                    </div>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
-                      {(prob * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
-
-    </div>
-  )}
-  ```
-
-  File: `frontend/src/csv_analytics/CsvAlertDetailsModal.jsx`
-  Verify: frontend compiles; open a RULE+ML or ML alert and confirm the "ML Analysis" section
-  renders with prediction, risk bar, evidence table, and class probabilities.
-
-- [ ] 11. **`backend/tests/test_ml_integration.py` — Create pytest integration test**
-
-  Create `backend/tests/test_ml_integration.py`. The test:
-
-  1. Inserts `sys.path` so `backend/` is importable.
-  2. Creates an in-memory SQLite session using `init_db` and `SessionLocal`.
-  3. Reads `sample_security_events.csv` as bytes from the known absolute path
-     `<workspace>/Working prototype/log/sample_security_events.csv`.
-  4. Calls `CsvAnalyticsService.process_csv_upload(file_bytes, "sample_security_events.csv", db)`.
-  5. Calls `CsvAnalyticsService.get_alerts(import_id=result["import_id"], severity=None, status=None, source=None, db=db)`.
-  6. Builds a lookup `alerts_by_user = {a["user"]: a for a in alerts}`.
-  7. Assertions:
-
-     ```python
-     # david: BRUTE_FORCE
-     david_alerts = [a for a in alerts if a.get("user") == "david" and a.get("source") in ("ML","RULE+ML")]
-     assert any(a.get("ml_prediction") == "BRUTE_FORCE" for a in david_alerts), \
-         "david should be flagged BRUTE_FORCE"
-
-     # bob: FAIL_THEN_SUCCESS
-     bob_alerts = [a for a in alerts if a.get("user") == "bob" and a.get("source") in ("ML","RULE+ML")]
-     assert any(a.get("ml_prediction") == "FAIL_THEN_SUCCESS" for a in bob_alerts), \
-         "bob should be flagged FAIL_THEN_SUCCESS"
-
-     # user1-4 spray from 198.51.100.50: single PASSWORD_SPRAY incident
-     spray_alerts = [a for a in alerts
-                     if a.get("ip") == "198.51.100.50"
-                     and a.get("ml_prediction") == "PASSWORD_SPRAY"
-                     and a.get("source") in ("ML","RULE+ML")]
-     assert len(spray_alerts) == 1, \
-         f"Expected exactly one PASSWORD_SPRAY from 198.51.100.50, got {len(spray_alerts)}"
-
-     # alice and charlie: NOT flagged by ML
-     ml_alerts = [a for a in alerts if a.get("source") in ("ML","RULE+ML")]
-     assert not any(a.get("user") == "alice" for a in ml_alerts), "alice must not be ML-flagged"
-     assert not any(a.get("user") == "charlie" for a in ml_alerts), "charlie must not be ML-flagged"
-
-     # at least one alert has an ML source
-     assert any(a.get("source") in ("ML","RULE+ML") for a in alerts), \
-         "At least one alert must have ML source"
-     ```
-
-  8. Separate test function `test_upload_without_model()`:
-     - Temporarily rename `backend/ml/model.joblib` to `model.joblib.bak`.
-     - Call `process_csv_upload(...)` in a fresh db session.
-     - Assert the result has `"success": True` and `alerts` count >= 0.
-     - Rename the file back in a `finally` block.
-     - Assert at least one alert exists (rule-only).
-
-  File: `backend/tests/test_ml_integration.py`
-  Verify: `cd backend && python -m pytest tests/test_ml_integration.py -v` — all assertions pass.
+## Overview
+
+Replace all CSS keyframe animations and `transition: all` rules with buttery-smooth, spring-based, iOS 17/18-style animations using the `motion` package (React 19 compatible). No data logic or visual design changes—motion only.
+
+**Key deliverables**:
+1. Install `motion` package
+2. Create central motion config (`src/motion.js`) with springs, variants, and helpers
+3. Remove CSS keyframes and replace `transition: all` rules
+4. Update all components with motion animations (App.jsx, pages, components, live views)
+5. Verify build passes with no warnings; test functionality
+
+**Critical decisions made** (from design review findings):
+- **H2 resolved**: Using `motion` package's key-based presence API, not `AnimatePresence` (which doesn't exist in motion)
+- **H4 resolved**: RiskGauge counter uses `useSpring` + `useTransform` pattern in motion.js
+- **H5 resolved**: Exit animations: 0.2s consistently for all exits (page, row, modal)
+- **M1 resolved**: Complete CSS audit provided below with file:line references
+- **M3 resolved**: whileInView viewport margin uses `"-40px"` (pixels, not percentage)
+- **N1 resolved**: Status badge breathing glow is infinite (acceptable for live indicator; documented)
 
 ---
 
-## Safety rules checklist (must remain true after all changes)
+## Phase 1: Install & Setup
 
-- All `ml_review_label` values and `message` strings for ML-only alerts use "Needs review"
-  phrasing sourced directly from `predictor.py:REVIEW_LABEL` — never "guilty" or "blocked".
-- `SecurityDetector.detect_alerts()` is never touched (rules 1–10 intact).
-- `backend/ml/` is read-only — only `predictor.py` is imported, nothing written.
-- If `predict()` raises any exception, upload continues with rule-only alerts (step 1 guard).
-- Existing RULE alerts (`source="RULE"`) are unchanged; the `source` field defaults to `"RULE"`
-  in the existing `CsvAlert` model definition.
+- [ ] **1. Install motion package and verify React 19 compatibility**
+
+  Run `npm install motion` in workspace root.
+  Verify build succeeds: `npm run build` (no errors, no warnings).
+  This is prerequisite for all subsequent steps.
+
+  Files: package.json (updated with motion dependency)
+  Verify: `npm run build` passes, `node_modules/motion` exists, no peer dependency errors
+
+- [ ] **2. Create central motion configuration**
+
+  Create `src/motion.js` with:
+  - `springs.soft`, `springs.snappy`, `springs.sheet` object exports
+  - `appleEase` cubic-bezier constant
+  - `staggerConfig` with delayChildren and staggerChildren
+  - `variants` object: fadeUp, pageTransition, slideInRight, listContainer, listItem, modalScale, backdropFade
+  - `useMotionPrefs()` hook (detects prefers-reduced-motion, returns appropriate variant set)
+  - Note: Fix H2 finding: do NOT import AnimatePresence (doesn't exist in motion); key changes handle presence
+  - Note: Add comment at top: `import React from 'react'` (fixes H1 finding)
+  - Implementation: Use exact code from motion-design.md Section 2, with additions:
+    - Add helper function `scrollRevealConfig` constant: `{ once: true, viewport: { margin: "-40px" } }`
+    - Add `animateCounter` helper to convert numeric useSpring values to text via useTransform (fixes H4 finding)
+    - Add `calculateDashOffset` helper for RiskGauge arc animation (animates from previous value, not 0)
+
+  Files: src/motion.js (create new)
+  Verify: `import { springs, variants, useMotionPrefs } from './motion'` in any test file succeeds; no runtime errors
+
+- [ ] **3. Wrap App.jsx with MotionConfig**
+
+  In `src/App.jsx`, wrap the component tree with `<MotionConfig reducedMotion="user">`.
+  Import: `import { MotionConfig } from 'motion/react'`
+
+  Files: src/App.jsx (lines ~1-15 at root export)
+  Verify: Component tree renders with no console errors; accessibility: test with `prefers-reduced-motion: reduce` enabled in browser DevTools and observe fades instead of springs
 
 ---
 
-## Dependency order
+## Phase 2: CSS Cleanup (Foundation for Motion)
 
-Steps 1 → 2 → 3 → 4 must be done in order (all in `service.py`).
-Steps 6 and 7 must be done together (router + service `get_alerts` signature).
-Steps 8 and 9 are independent of each other and can be done in either order.
-Step 10 depends on steps 1–4 (needs ML data in alerts).
-Step 11 depends on steps 1–7 (needs the full backend pipeline working).
+Remove all keyframes, animations, and `transition: all` rules to prevent double-animations.
+
+- [ ] **4. Remove keyframes and animations from index.css**
+
+  **Remove these keyframe definitions** (index.css lines 95–113):
+  - `@keyframes fade-in` (lines 95–99)
+  - `@keyframes slide-in-left` (lines 100–104)
+  - `@keyframes slide-in-up` (lines 105–109)
+  - `@keyframes scale-in` (lines 110–113)
+
+  **Remove inline `animation:` usage** in App.jsx and App.css on these elements (scanned via grep):
+  - `.sidebar` animation removed (if present in App.css)
+  - `.main-content` animation removed
+  - `.header` animation removed
+  - `.body` animation removed
+  - `.section` animation removed
+
+  Files: src/index.css, src/App.css
+  Verify: `npm run build` passes; no CSS syntax errors; app still renders (no flickering)
+
+- [ ] **5. Remove keyframes and animations from ios-motion.css**
+
+  **Remove these keyframe definitions** (ios-motion.css lines 96–223):
+  - `@keyframes iosPageEntrance` (lines 96–112)
+  - `@keyframes iosTabFadeIn` (lines 113–123)
+  - `@keyframes iosFadeIn` (lines 125–129)
+  - `@keyframes iosFadeInUp` (lines 130–140)
+  - `@keyframes iosScaleIn` (lines 141–151)
+  - `@keyframes iosModalEntrance` (lines 152–162)
+  - `@keyframes iosBackdropBlur` (lines 163–175)
+  - `@keyframes iosDropdownEntrance` (lines 176–186)
+  - `@keyframes iosToastSlideIn` (lines 187–197)
+  - `@keyframes iosPulseSubtle` (lines 198–208)
+  - `@keyframes iosShimmer` (lines 209–223)
+
+  **Keep these for now** (CSS-only, not animation):
+  - CSS variables (--ios-ease, --ios-spring, --ios-duration-*)
+  - Smooth scrolling rules
+  - Scrollbar styling
+  - Button/link base styles (but remove `transition: all` rules from selectors)
+
+  **Replace `transition: transform` and explicit transition rules** with motion variants in components (do not remove from CSS yet; CSS transitions will be cleaned up per component as motion replaces them):
+  - ios-motion.css lines 61–66: button transition rules (will be moved to motion whileHover/whileTap)
+  - ios-motion.css lines 248–251: stat-card transitions (will be moved to motion)
+  - ios-motion.css lines 260–262: stat-icon transition (will be moved to motion)
+  - (And others listed in M1 findings; these are handled per-component)
+
+  Files: src/styles/ios-motion.css
+  Verify: `npm run build` passes; no CSS syntax errors; page still renders
+
+- [ ] **6. Remove keyframes from CustomSelect.css**
+
+  **Remove keyframe definition**:
+  - `@keyframes iosDropdownEntrance` (if redefined in CustomSelect.css; typically at line ~109)
+
+  **Convert `transition: all` to motion variants** (will be done in component update step):
+  - CustomSelect.css lines 41, 153, 181: `transition: all` rules → move to motion component
+
+  Files: src/components/CustomSelect.css
+  Verify: `npm run build` passes; no CSS syntax errors
+
+- [ ] **7. Remove keyframes from csvAnalytics.css**
+
+  **Remove keyframe definitions**:
+  - `@keyframes progress-pulse` (csvAnalytics.css line 707–712)
+  - Any other `@keyframes` definitions in this file
+
+  **Convert `transition: all` to motion**:
+  - csvAnalytics.css lines 62, 90, 129, 576, 878, 903: `transition: all` rules (will be moved to motion in CSV component steps)
+
+  Files: src/csv_analytics/csvAnalytics.css
+  Verify: `npm run build` passes
+
+- [ ] **8. Remove keyframes from ComputerDetailView.css**
+
+  **Keep `@keyframes spin`** (line 42–45) if it's used for CSS loading spinner (not motion-replaceable, or move to motion if desired)
+  Actually, replace with motion loading spinner or keep as-is if used in SVG.
+  Decision: Keep for now (not part of motion upgrade scope); comment that this is CSS-only for now
+
+  Files: src/components/live/ComputerDetailView.css
+  Verify: `npm run build` passes
+
+- [ ] **9. Remove keyframes from RiskGauge.css**
+
+  **Remove or replace `@keyframes` definitions** if present; check file content first.
+  **Replace inline `transition: stroke-dashoffset`** rule with motion animation (handled in RiskGauge.jsx component update)
+
+  Files: src/components/RiskGauge.css
+  Verify: `npm run build` passes
+
+---
+
+## Phase 3: Core Component Updates (App.jsx & Pages)
+
+- [ ] **10. Update App.jsx: Sidebar navigation with layoutId pill highlight**
+
+  Add motion imports: `import { motion } from 'motion/react'`
+  
+  **Replace sidebar nav active indicator**:
+  - Sidebar nav items currently use class-based active state
+  - Add `layoutId="nav-active"` to a motion.div background element behind active item
+  - This motion.div animates its position to match active item with springs.snappy
+  - Gradient height: match nav item height with layout animation
+  
+  **Add whileHover/whileTap to nav items**:
+  - whileHover: `{ x: 2, scale: 1.06 }` with springs.snappy
+  - whileTap: `{ scale: 0.97 }` with springs.snappy
+  - Icon scales on hover: `{ scale: 1.06 }` springs.snappy
+  
+  **Add stagger on mount**:
+  - Wrap nav items in motion.div with `variants.listContainer`
+  - Each nav item motion.div with `variants.listItem`
+  - Only animate first 12 items; cap stagger total to ~0.6s
+  
+  **Mobile drawer (if exists)**:
+  - Animate drawer translateX from -100% → 0 with springs.soft on open
+  - Add drag-to-close: `drag="x"` with `onDragEnd` callback
+  - Backdrop fades in with springs.soft
+  
+  Files: src/App.jsx (Sidebar component section)
+  Verify: `npm run dev` in workspace; inspect nav pill animation smoothness; click nav items and verify smooth spring motion; test mobile drawer drag-to-close
+
+- [ ] **11. Update App.jsx: Header section**
+
+  **Clock digits**: Add CSS `font-variant-numeric: tabular-nums` to clock element to prevent layout shift on digit update (no animation, just layout fix)
+  
+  **Category label**: Wrap category label text in motion.div with:
+  - On mount: `initial="hidden"` `animate="visible"` with fadeUp variant
+  - On section change: Crossfade label + subtle y slide (y: -2 → 0) via motion.animate or key change
+  - Trigger on activeMenu change: `key={activeMenu}` on motion.div
+  
+  Files: src/App.jsx (Header component section)
+  Verify: Clock updates without layout jank; category label fades/slides smoothly on section change
+
+- [ ] **12. Update App.jsx: Overview stat cards with animated counters**
+
+  **Container**: Wrap stat cards in motion.div with:
+  - `variants.fadeUp` on visible
+  - `initial="hidden"` `animate="visible"`
+  - Stagger children: `delayChildren: 0.08s` `staggerChildren: 0.05s` (first 12 items only)
+  
+  **Each stat card**:
+  - Fade up on mount
+  - whileHover: `{ y: -3, shadow: ...grow }` with springs.soft
+  - whileTap: `{ scale: 0.98 }` with springs.snappy
+  
+  **Stat number counter**:
+  - Use `useSpring` + `useTransform` from motion/react (pattern: `animateCounter` helper from motion.js)
+  - Animates from previous value to new value with springs.soft over 0.8s
+  - Never resets to 0 on data update
+  
+  **Recharts <Area>** in OverviewSection:
+  - Set `isAnimationActive={true}`
+  - Set `animationDuration={900}`
+  - Set `animationEasing="ease-out"` or custom curve
+  - This handles chart line smoothing automatically; no motion intervention needed
+  
+  Files: src/App.jsx (OverviewSection component)
+  Verify: Stat cards fade in with stagger; numbers count up smoothly; hover effect applies; `npm run build` passes
+
+- [ ] **13. Update App.jsx: Events & Alerts lists (most critical for live data)**
+
+  **AnimatePresence replacement** (motion package does NOT have AnimatePresence; use key changes):
+  - Wrap EventsTable and AlertList in motion.div containers with `key={listKey}`
+  - On new data: toggle key to trigger re-render with exit/enter animations
+  - Use `initial={false}` equivalent by managing animation state
+  
+  **Layout animation for rows**:
+  - Each row in motion.div with `layout="position"`
+  - When new row added at top, existing rows slide down smoothly (layout handles position)
+  
+  **New row enter**:
+  - opacity 0 → 1, y: -12 → 0, scale 0.98 → 1
+  - Transition: springs.snappy over 0.34s
+  
+  **Highlight flash** on new row:
+  - After enter completes, background color animates from accent → transparent over 1.2s
+  - Use motion.div inside row with `animate={{ backgroundColor: [...] }}`
+  
+  **Row exit** (on removal):
+  - Collapse height (layout handles) + fade opacity over 0.2s
+  - Use `layout` + conditional rendering
+  
+  **Batching & cap simultaneous animations**:
+  - Implement batch queue: max 5 rows animate simultaneously
+  - Remaining rows queue with 300ms delay between batches
+  - Stagger within batch: 0.04s per item (total ~0.28s per batch)
+  - Implementation: useState with batchIndex, setTimeout for queue flushing
+  
+  **High-risk alert pulse**:
+  - One-time pulse only (not infinite loop)
+  - scale: 1 → 1.01 → 1 over 0.4s on mount (one iteration)
+  - Trigger on risk level change or row insertion
+  
+  **First load stagger**:
+  - Initial render: stagger first 12 rows with 0.04s delay per row
+  - Delaying first row: 0.08s
+  
+  Files: src/App.jsx (EventsTable and AlertList component sections)
+  Verify: Live events/alerts enter smoothly from top; existing rows slide down; new rows highlight and fade; high-risk rows pulse once on entry; batching prevents jank when 20 events arrive at once; test with `npm run dev` and WebSocket data; check React Profiler for layout thrashing (should be minimal)
+
+- [ ] **14. Update App.jsx: Page/section switching (OverviewSection, LiveTelemetrySection, SettingsSection, etc.)**
+
+  **Main section container** (switches between OverviewSection, LiveTelemetrySection, SettingsSection, etc.):
+  - Wrap active section in motion.div with `key={activeMenu}` to trigger exit/enter
+  - `variants.pageTransition`: opacity 0 → 1, y: 16 → 0, blur: 6px → 0 on enter
+  - Exit: faster (0.2s), opacity → 0, y: -8, blur: 4px
+  - Transition: springs.soft on enter, ease on exit
+  
+  **Section header** (h2 + description):
+  - Animate in first with `delayChildren: 0.05s`
+  
+  **Content blocks**:
+  - Stagger after header with `staggerChildren: 0.04s`
+  
+  **Live Telemetry section**:
+  - Nested page transition for events/alerts/status sections
+  - Use same pageTransition variant
+  
+  Files: src/App.jsx (section switching logic around activeMenu)
+  Verify: Sections fade in/out smoothly on click; header enters first, content follows with stagger; `npm run dev` and click through menu items
+
+- [ ] **15. Update App.jsx: Status badges & online/offline indicators**
+
+  **Breathing glow on online dot**:
+  - motion.div with `animate` loop: scale [1, 1.2, 1], opacity [0.8, 1, 0.8]
+  - transition: repeat: Infinity, duration: 2s, easeInOut
+  
+  **Offline dot**: Static, no animation
+  
+  **Status color change**:
+  - Crossfade color + text when status changes
+  - opacity + color transition over 0.26s springs.soft
+  
+  Files: src/App.jsx (StatusBadge component)
+  Verify: Online dot breathes smoothly; offline is static; status color changes crossfade
+
+- [ ] **16. Update App.jsx: Buttons globally (admin-btn, nav-item, date-filter-pill)**
+
+  **All buttons**: Add motion wrapper or motion.button:
+  - whileHover: `{ scale: 1.02 }` springs.snappy
+  - whileTap: `{ scale: 0.96 }` springs.snappy
+  
+  **Focus-visible ring**:
+  - motion.div overlay with opacity 0 → 1 springs.soft on focus
+  
+  Files: src/App.jsx (all button elements)
+  Verify: Buttons scale smoothly on hover and tap; focus ring fades in; `npm run dev` and test all interactive buttons
+
+- [ ] **17. Update App.jsx: Panels & cards (events-panel, alerts-panel, settings-card, telemetry-panels)**
+
+  **Scroll reveal**:
+  - Use `whileInView` with `variants.fadeUp` once:true viewport={{ margin: "-40px" }}
+  - Each panel animates in when scrolled into view
+  
+  Files: src/App.jsx (panel rendering)
+  Verify: Scroll app vertically; panels fade in as they enter viewport; `npm run dev`
+
+- [ ] **18. Update PageTransition.jsx component**
+
+  If PageTransition.jsx exists and wraps page transitions:
+  - Wrap with motion.div using pageTransition variant
+  - Remove any existing CSS keyframe animations
+  - Ensure key prop changes on route change (for presence)
+  
+  Files: src/components/PageTransition.jsx
+  Verify: `npm run build` passes; no console errors
+
+---
+
+## Phase 4: Detailed Page & Component Updates
+
+- [ ] **19. Update RiskGauge.jsx (SVG arc animation)**
+
+  **Current**: Inline `transition: stroke-dashoffset 0.3s ease`
+  
+  **New approach**:
+  - Import `useMotionValue`, `useTransform`, `useSpring`, `motion` from motion/react
+  - Import `calculateDashOffset` helper from motion.js
+  - Track previous score in ref: `useRef(currentScore)`
+  - On score change:
+    - Calculate dashOffsetFrom and dashOffsetTo using `calculateDashOffset(prevScore, newScore)`
+    - Use `useSpring` to animate dashOffset from previous → new value with springs.soft
+    - Never reset to 0
+  - Animated number counter using `useSpring` + `useTransform` (animateCounter pattern from motion.js)
+  - Color transition: Use motion.div or SVG element with color animation springs.soft when band changes
+  
+  Files: src/components/RiskGauge.jsx
+  Verify: Arc morphs smoothly from previous value (no reset); number tweens smoothly; color transitions on band change; `npm run dev` and watch RiskGauge update with test data
+
+- [ ] **20. Update RiskChart.jsx (Recharts line animation)**
+
+  **Setup Recharts animations**:
+  - Wrap each chart element (Line, Area, Bar) with `isAnimationActive={true}`
+  - Set `animationDuration={900}`
+  - Set `animationEasing="ease-out"` or use cubic-bezier
+  - Tooltip: Scale + opacity animation springs.sheet on appearance
+  
+  **Smooth data morph**:
+  - Recharts handles this automatically with isAnimationActive
+  - Avoid re-creating chart data objects every render (use useMemo)
+  
+  Files: src/components/RiskChart.jsx
+  Verify: Chart line morphs smoothly on data update; tooltip appears with spring; `npm run dev`
+
+- [ ] **21. Update EntityDetail.jsx (detail page slide-in from right)**
+
+  **Page transition**:
+  - Wrap content in motion.div with `variants.slideInRight` (x: 24 → 0)
+  - Enter: springs.soft, exit: springs.soft with x: 24
+  
+  **Expandable blocks**:
+  - Never use CSS `height: auto` transitions
+  - Use motion `layout` + `layoutId` for animated height on toggle
+  - Or use `Animated.div` with height animation from 0 → auto (measure element)
+  
+  **Section header & content**:
+  - Stagger content blocks on mount
+  
+  Files: src/pages/EntityDetail.jsx
+  Verify: Detail view slides in from right on open; goes back slides out to right; expandable blocks animate height smoothly; `npm run dev` and navigate to detail view
+
+- [ ] **22. Update IncidentPanel.jsx**
+
+  **Same as EntityDetail.jsx**:
+  - Page transition: slideInRight variant
+  - Expandable sections: layout animation
+  - Content stagger on mount
+  
+  Files: src/pages/IncidentPanel.jsx
+  Verify: Same as EntityDetail
+
+- [ ] **23. Update Environment.jsx**
+
+  **Same as EntityDetail.jsx**: Page transition, expandable sections, content stagger
+
+  Files: src/pages/Environment.jsx
+  Verify: Same as EntityDetail
+
+- [ ] **24. Update CustomSelect.jsx (dropdown animation)**
+
+  **Replace keyframe-based dropdown entrance**:
+  - Remove `@keyframes iosDropdownEntrance` reference
+  - Wrap dropdown menu in motion.div with `variants.modalScale` (scale 0.96 → 1, opacity 0 → 1)
+  - Transition: springs.sheet over 0.34s
+  
+  **Replace `transition: all` rules**:
+  - CustomSelect.css lines 41, 85, 153, 181 (convert to motion variants in component)
+  
+  **Dropdown items stagger**:
+  - motion.div with `variants.listContainer` wrapping items
+  - Each item with `variants.listItem`
+  
+  Files: src/components/CustomSelect.jsx, src/components/CustomSelect.css
+  Verify: Dropdown opens with spring scale animation; items stagger in; `npm run dev` and test select interactions
+
+- [ ] **25. Update DateFilter.jsx**
+
+  **Button animations**:
+  - Replace `transition: all` with motion whileHover/whileTap
+  - whileHover: scale 1.02, whileTap: scale 0.96
+  - Transition: springs.snappy
+  
+  Files: src/components/DateFilter.jsx
+  Verify: Buttons scale on hover/tap; `npm run dev`
+
+- [ ] **26. Update Sparkline.jsx (if exists and needs animation)**
+
+  **Line draw-in on mount** (if desired; currently may not exist):
+  - Use pathLength animation from 0 → 1 with springs.soft
+  - Applies to SVG path element
+  
+  Files: src/components/Sparkline.jsx
+  Verify: Line draws in smoothly on render; `npm run dev`
+
+- [ ] **27. Update ScrollReveal.jsx (if exists)**
+
+  **Scroll reveal**:
+  - Component wraps child elements with whileInView fadeUp once:true
+  - Replace any existing CSS keyframes with motion
+  
+  Files: src/components/ScrollReveal.jsx
+  Verify: Content reveals on scroll; `npm run dev` and scroll page
+
+- [ ] **28. Update live view components (13 files in components/live/)**
+
+  For each of: AddLabModal.jsx, AssignLabModal.jsx, ComputerDetailView.jsx, Header.jsx, LabComputersView.jsx, LaboratoriesView.jsx, LabTerminalsView.jsx, LiveAlertModal.jsx, LiveAlertsView.jsx, LiveDashboardView.jsx, LiveGroupDetailsModal.jsx, LiveGroupedDimensionsView.jsx:
+  
+  **Modals** (AddLabModal, AssignLabModal, LiveAlertModal, LiveGroupDetailsModal):
+  - Wrap modal content in motion.div with `variants.modalScale` (scale 0.96 → 1, opacity 0 → 1)
+  - Transition: springs.sheet
+  - Backdrop with `variants.backdropFade`
+  
+  **Views** (ComputerDetailView, LaboratoriesView, LabComputersView, LabTerminalsView, LiveAlertsView, LiveDashboardView, LiveGroupedDimensionsView, Header):
+  - Page transition: `variants.pageTransition` on content wrapper
+  - List items (if present): AnimatePresence + layout + stagger
+  - Content blocks: whileInView fadeUp
+  - Buttons: whileHover/whileTap springs.snappy
+  - Status indicators: breathing glow for online
+  
+  **Remove all `@keyframes` references** in these files' CSS
+  
+  Files: src/components/live/* (all 13 files)
+  Verify: All live views animate smoothly; modals scale in; lists update with spring layout; no console errors; `npm run dev` and navigate through live components
+
+- [ ] **29. Update CSV Analytics components (CsvAnalyticsPage, CsvUploader, CsvAnalyticsCharts, CsvAlertDetailsModal, etc.)**
+
+  **Modals** (CsvAlertDetailsModal, CsvExportModal, CsvGroupDetailsModal):
+  - Wrap with `variants.modalScale` springs.sheet
+  
+  **Upload area** (CsvUploader):
+  - Dragover: scale 1.02 + border glow animation
+  - Drop: Spring settle scale 1 y 0 springs.soft
+  
+  **Charts** (CsvAnalyticsCharts):
+  - Recharts isAnimationActive 900ms
+  
+  **Panels**: whileInView fadeUp once
+  
+  **Buttons**: whileHover/whileTap springs.snappy
+  
+  **Remove `@keyframes progress-pulse` and other keyframes** from csvAnalytics.css
+  
+  **Replace `transition: all` rules** with motion
+  
+  Files: src/csv_analytics/* (all files)
+  Verify: CSV page animates smoothly; upload drag-to-drop works; charts animate; modals scale; `npm run dev` and test CSV workflow
+
+- [ ] **30. Final CSS cleanup: Remove remaining explicit transition rules (optional but recommended)**
+
+  After all components are converted to motion:
+  - Review remaining `transition:` rules in iOS-motion.css (lines 61–66, 248–251, 260–262, 318–321, etc.)
+  - These can remain as fallback for non-motion elements OR be removed if all are motion-wrapped
+  - Decision: Keep button base transitions as fallback for accessibility; remove deprecated `transition: all` rules
+  - Audit App.css, CustomSelect.css, csvAnalytics.css for orphaned transition rules that no longer have corresponding motion animations
+  - Replace with explicit property transitions where needed (e.g., `transition: background-color 0.26s var(--ios-ease)` for non-animated color changes)
+  
+  Files: src/styles/ios-motion.css, src/App.css, src/components/CustomSelect.css, src/csv_analytics/csvAnalytics.css
+  Verify: No "transition: all" rules remain; only explicit properties or motion-wrapped elements; `npm run build` passes
+
+---
+
+## Phase 5: Verification & Testing
+
+- [ ] **31. Full build verification**
+
+  Run `npm run build` from `c:\Users\wwwki\OneDrive\Desktop\cyber hacks\TAVIX-GAURD\Working prototype\log\frontend`
+  
+  Expected: Build succeeds, no errors, no warnings
+  
+  Check:
+  - No "animation" or "transition" CSS class conflicts
+  - No undefined motion/react imports
+  - All variants exported and imported correctly
+  - Vite bundle is valid
+  
+  Verify: `npm run build` completes with exit code 0
+
+- [ ] **32. Runtime functionality testing**
+
+  Run `npm run dev` and start development server
+  
+  **Test each section**:
+  1. **Sidebar**: Nav pills animate on click; stagger on mount smooth
+  2. **Overview**: Stat cards fade in with stagger; numbers count up; hover effect applies
+  3. **Events/Alerts**: Live data enters smoothly; rows slide down on new insert; high-risk pulse once; old rows collapse on remove
+  4. **Pages**: Navigate through EntityDetail, Environment, IncidentPanel; slide-in from right smooth
+  5. **Live components**: All modals scale in; views page-transition; status dots breathe
+  6. **CSV**: Upload drag-over scales; modals appear; charts animate
+  7. **Buttons**: All buttons scale on hover/tap throughout app
+  8. **Scroll reveal**: Panels fade in as scrolled into view
+  
+  Verify: No layout jank, no stuttering, 60fps smooth (check DevTools Performance tab), no console errors
+
+- [ ] **33. Accessibility testing: prefers-reduced-motion**
+
+  In browser DevTools, emulate `prefers-reduced-motion: reduce`:
+  - Chrome: DevTools → Rendering → Emulate CSS media feature prefers-reduced-motion
+  
+  Expected: All animations become simple 150ms fades (no springs, no transforms)
+  
+  Verify: App functions normally with reduced motion; no visual glitches
+
+- [ ] **34. Performance profiling**
+
+  Use React DevTools Profiler:
+  1. Open dev server in React 19 app
+  2. React DevTools → Profiler → Start recording
+  3. Trigger live data update (WebSocket event or button click)
+  4. Stop recording
+  
+  Check:
+  - No component renders unnecessarily (EventsTable should batch update, not re-render all rows on every event)
+  - Motion animations don't cause layout thrashing (transform/opacity only)
+  - Frame rate stays at 60fps (or higher on ProMotion)
+  
+  Verify: Profiler shows green/yellow (acceptable), not red (problematic)
+
+- [ ] **35. Visual regression check**
+
+  Compare motion output to design intent:
+  - Page transitions: smooth, 340ms soft spring enter, 200ms exit ✓
+  - Buttons: responsive, snappy spring ✓
+  - Lists: rows slide down smoothly, new row highlight fades ✓
+  - Status badge: online dot breathes gently, offline static ✓
+  - Detail views: slide in from right, expandable sections animate ✓
+  - Modals: scale + fade in, dim backdrop ✓
+  
+  Verify: All animations match iOS 17/18 aesthetic (refined, subtle, no excessive bounce)
+
+- [ ] **36. Cross-browser testing (optional but recommended)**
+
+  Test in:
+  - Chrome (latest) — primary
+  - Edge (latest)
+  - Safari (macOS) — to verify WebKit compatibility
+  
+  Check: Motion animations work in all browsers, no vendor-specific issues
+  
+  Verify: No console errors in any browser
+
+---
+
+## Tuning Guide (After Implementation)
+
+If motion feel needs adjustment, tune `src/motion.js`:
+
+| Parameter | Current | Snappier | Softer |
+|-----------|---------|----------|--------|
+| springs.soft.stiffness | 260 | 280 | 240 |
+| springs.soft.damping | 30 | 35 | 25 |
+| springs.snappy.stiffness | 420 | 440 | 380 |
+| springs.snappy.damping | 34 | 40 | 28 |
+| springs.sheet.stiffness | 300 | 320 | 280 |
+| staggerChildren | 0.05s | 0.03s | 0.07s |
+| delayChildren | 0.08s | 0.05s | 0.12s |
+
+---
+
+## CSS Animations Removed (Master Checklist)
+
+| Keyframe | File | Lines | Status |
+|----------|------|-------|--------|
+| fade-in | index.css | 95–99 | Remove (Step 4) |
+| slide-in-left | index.css | 100–104 | Remove (Step 4) |
+| slide-in-up | index.css | 105–109 | Remove (Step 4) |
+| scale-in | index.css | 110–113 | Remove (Step 4) |
+| iosPageEntrance | ios-motion.css | 96–112 | Remove (Step 5) |
+| iosTabFadeIn | ios-motion.css | 113–123 | Remove (Step 5) |
+| iosFadeIn | ios-motion.css | 125–129 | Remove (Step 5) |
+| iosFadeInUp | ios-motion.css | 130–140 | Remove (Step 5) |
+| iosScaleIn | ios-motion.css | 141–151 | Remove (Step 5) |
+| iosModalEntrance | ios-motion.css | 152–162 | Remove (Step 5) |
+| iosBackdropBlur | ios-motion.css | 163–175 | Remove (Step 5) |
+| iosDropdownEntrance | ios-motion.css | 176–186 | Remove (Step 5) |
+| iosToastSlideIn | ios-motion.css | 187–197 | Remove (Step 5) |
+| iosPulseSubtle | ios-motion.css | 198–208 | Remove (Step 5) |
+| iosShimmer | ios-motion.css | 209–223 | Remove (Step 5) |
+| iosDropdownEntrance | CustomSelect.css | ~109 | Remove (Step 6) |
+| progress-pulse | csvAnalytics.css | 707–712 | Remove (Step 7) |
+| spin | ComputerDetailView.css | 42–45 | Keep (CSS-only loading spinner) |
+
+---
+
+## Design Review Findings — Resolution Summary
+
+| Finding | Decision | Implementation Step |
+|---------|----------|---------------------|
+| H1: React import missing | Add `import React from 'react'` at top of src/motion.js | Step 2 |
+| H2: AnimatePresence doesn't exist in motion | Use key-based presence (key changes, initial={false} equivalent) | Steps 13, 28 |
+| H3: Batching algorithm unspecified | Implement batch queue: max 5 rows, 300ms batch delay, 0.04s stagger within batch | Step 13 |
+| H4: Counter animation undefined | Use useSpring + useTransform pattern; add animateCounter helper to motion.js | Steps 2, 12, 19 |
+| H5: Exit timing contradictions | Standardize: all exits 0.2s; use springs.soft for page/row exits | Steps 5, 12, 13 |
+| M1: CSS cleanup incomplete | Complete audit provided; all keyframes and transition rules listed with file:line | Steps 4–9, 30 |
+| M2: Live components incomplete | All 13 live/* components documented; motion specs provided | Step 28 |
+| M3: Scroll reveal margin unit | Use "-40px" (pixels); add scrollRevealConfig constant to motion.js | Step 2, 17 |
+| N1: Status badge infinite loop | Keep infinite loop (acceptable for live indicator); document in code | Step 15 |
+| N2: Tabular-nums font feature | Add font-variant-numeric: tabular-nums to clock (CSS-only, not motion) | Step 11 |
+| N3: Motion package React 19 compat | Test npm install motion; verify build passes (handled in Step 1) | Step 1 |
+| N4: useMotionConfig unused | Remove useMotionConfig hook; keep useMotionPrefs as single hook | Step 2 |
+
+---
+
+## Final Checklist
+
+- [ ] npm install motion succeeds
+- [ ] src/motion.js created with all springs, variants, helpers
+- [ ] App.jsx wrapped with MotionConfig
+- [ ] All CSS keyframes removed from index.css, ios-motion.css, component CSS files
+- [ ] All `animation:` inline rules removed from components
+- [ ] All `transition: all` converted to motion or explicit properties
+- [ ] App.jsx sections animate with pageTransition variant
+- [ ] Sidebar nav pill animates with layoutId
+- [ ] Stat cards fade with stagger and animated counters
+- [ ] Events/Alerts lists batch-animate with layout positioning
+- [ ] RiskGauge animates arc from previous value (not 0)
+- [ ] All buttons whileHover scale 1.02, whileTap scale 0.96
+- [ ] Status badges online dot breathes, offline static
+- [ ] Detail pages slide in from right
+- [ ] Modals scale in with springs.sheet
+- [ ] Live components all motion-enabled (13 files)
+- [ ] CSV components all motion-enabled
+- [ ] npm run build passes with no errors/warnings
+- [ ] npm run dev shows smooth animations at 60fps
+- [ ] prefers-reduced-motion: reduce tested and works (fades only)
+- [ ] No console errors or warnings
+
+---
+
+## Implementation Notes
+
+**Critical points to remember**:
+
+1. **No AnimatePresence in motion package** — Use key-based presence or controlled exit/enter timing
+2. **Motion animates transform/opacity/filter only** — Never animate width/height/top/left directly; use layout
+3. **RiskGauge arc never resets** — Always animate from previous dashOffset to new dashOffset
+4. **Batch list animations** — Cap 5 simultaneous row animations; queue remaining at 300ms intervals
+5. **No double-animations** — CSS keyframes must be removed before motion components are added
+6. **Verify build and tests** — Every step should leave codebase in buildable state
+7. **Accessibility first** — prefers-reduced-motion must work; test with accessibility settings enabled
+

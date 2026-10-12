@@ -5,15 +5,15 @@ export default function LabTerminalsView({ terminals, labs, onAssign }) {
   const [selectedTerminal, setSelectedTerminal] = useState(null);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div>
-        <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+    <div className="lab-terminals-view">
+      <div className="lab-terminals-header">
+        <h3 className="lab-terminals-heading">
           Lab Terminals
         </h3>
       </div>
 
-      <div className="data-table-container">
-        <table className="data-table">
+      <div className="lab-terminals-table-container">
+        <table className="lab-terminals-table data-table">
           <thead>
             <tr>
               <th>Terminal ID</th>

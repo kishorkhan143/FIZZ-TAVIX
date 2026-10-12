@@ -47,7 +47,7 @@ export default function CsvGroupsExplorer({ importId }) {
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div className="csv-groups-explorer">
       {/* Control Toolbar */}
       <div className="grouping-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
@@ -113,8 +113,8 @@ export default function CsvGroupsExplorer({ importId }) {
       </div>
 
       {/* Group Table */}
-      <div className="data-table-container">
-        <table className="data-table">
+      <div className="csv-groups-table-container">
+        <table className="csv-groups-table data-table">
           <thead>
             <tr>
               <th>{selectedDimension === 'user' ? 'User' : (DIMENSIONS.find((d) => d.id === selectedDimension)?.label || 'User')}</th>

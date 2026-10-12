@@ -102,7 +102,6 @@ def get_csv_alerts(
     import_id: Optional[str] = Query(None),
     severity: Optional[str] = Query(None, description="ALL, CRITICAL, HIGH, MEDIUM, LOW"),
     status: Optional[str] = Query(None, description="ALL, OPEN, INVESTIGATING, RESOLVED"),
-    source: Optional[str] = Query(None, description="all | rule | ml | both"),
     db: Session = Depends(get_db),
 ):
     """
@@ -112,7 +111,6 @@ def get_csv_alerts(
         import_id=import_id,
         severity=severity,
         status=status,
-        source=source,
         db=db,
     )
     return {

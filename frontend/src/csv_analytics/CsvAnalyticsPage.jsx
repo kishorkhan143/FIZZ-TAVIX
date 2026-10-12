@@ -1,10 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
 import './csvAnalytics.css';
 import { BACKEND_URL } from '../useAuthSentinel';
 import CsvAnalyticsCharts from './CsvAnalyticsCharts';
 import CsvGroupsExplorer from './CsvGroupsExplorer';
 import CsvAlertsExplorer from './CsvAlertsExplorer';
-import PageTransition from '../components/PageTransition';
+
+const TABS = [
+  { id: 'groups', label: 'Grouped Dimensions' },
+  { id: 'alerts', label: 'Security Alerts', hasBadge: true },
+  { id: 'dashboard', label: 'Dashboard & Charts' },
+];
 
 export default function CsvAnalyticsPage() {
   const [activeTab, setActiveTab] = useState('groups');
@@ -13,6 +19,7 @@ export default function CsvAnalyticsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const fileInputRef = useRef(null);
+  const shouldReduceMotion = useReducedMotion();
 
   const fetchSummary = useCallback(async (importId = null) => {
     try {
@@ -70,7 +77,7 @@ export default function CsvAnalyticsPage() {
       if (data && data.import_id) {
         setCurrentImportId(data.import_id);
         await fetchSummary(data.import_id);
-        setActiveTab('dashboard');
+        setActiveTab('groups');
       }
     } catch (err) {
       setUploadError(err.message || 'Failed to upload CSV file.');
@@ -131,79 +138,91 @@ export default function CsvAnalyticsPage() {
         </div>
       )}
 
-      {/* Clean Navigation Tabs (No icons) */}
-      <div className="csv-tabs-nav">
-        <button
-          type="button"
-          className={`csv-tab-btn ${activeTab === 'groups' ? 'active' : ''}`}
-          onClick={() => setActiveTab('groups')}
-        >
-          <span>Grouped Dimensions</span>
-        </button>
-
-        <button
-          type="button"
-          className={`csv-tab-btn ${activeTab === 'alerts' ? 'active' : ''}`}
-          onClick={() => setActiveTab('alerts')}
-        >
-          <span>Security Alerts</span>
-          {summaryData?.alerts_count > 0 && (
-            <span className="csv-tab-badge">{summaryData.alerts_count}</span>
-          )}
-        </button>
-
-        <button
-          type="button"
-          className={`csv-tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
-          onClick={() => setActiveTab('dashboard')}
-        >
-          <span>Dashboard & Charts</span>
-        </button>
+      {/* Clean Navigation Tabs */}
+      <div className="csv-tabs-nav" role="tablist">
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              className={`csv-tab-btn ${isActive ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <span>{tab.label}</span>
+              {tab.hasBadge && summaryData?.alerts_count > 0 && (
+                <span className="csv-tab-badge">{summaryData.alerts_count}</span>
+              )}
+              {isActive && (
+                <motion.div
+                  layoutId="csv-active-tab-indicator"
+                  className="csv-tab-active-indicator"
+                  transition={
+                    shouldReduceMotion
+                      ? { duration: 0 }
+                      : { type: 'spring', stiffness: 500, damping: 38, mass: 0.8 }
+                  }
+                />
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Tab Contents */}
-      <PageTransition transitionKey={activeTab}>
-        {activeTab === 'dashboard' && (
-          <>
-            {summaryData ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <CsvAnalyticsCharts summary={summaryData} />
-              </div>
-            ) : (
-              <div className="csv-empty-state-card">
-                <h3>No CSV Log File Analyzed Yet</h3>
-                <p>
-                  Click the <strong>Upload New CSV</strong> button above to load and correlate security events.
-                </p>
-              </div>
-            )}
-          </>
-        )}
+      {/* Tab Contents with smooth fade transition and persistent state */}
+      <div className="csv-tab-content-container">
+        {/* Tab 1: Grouped Dimensions */}
+        <div
+          className={`csv-tab-pane ${activeTab === 'groups' ? 'active' : ''}`}
+          role="tabpanel"
+          aria-hidden={activeTab !== 'groups'}
+        >
+          {summaryData ? (
+            <CsvGroupsExplorer importId={currentImportId} />
+          ) : (
+            <div className="csv-empty-state-card">
+              <p style={{ color: 'var(--text-tertiary)' }}>Please upload a CSV file to inspect groups.</p>
+            </div>
+          )}
+        </div>
 
-        {activeTab === 'alerts' && (
-          <>
-            {summaryData ? (
-              <CsvAlertsExplorer importId={currentImportId} />
-            ) : (
-              <div className="csv-empty-state-card">
-                <p style={{ color: 'var(--text-tertiary)' }}>Please upload a CSV file to inspect alerts.</p>
-              </div>
-            )}
-          </>
-        )}
+        {/* Tab 2: Security Alerts */}
+        <div
+          className={`csv-tab-pane ${activeTab === 'alerts' ? 'active' : ''}`}
+          role="tabpanel"
+          aria-hidden={activeTab !== 'alerts'}
+        >
+          {summaryData ? (
+            <CsvAlertsExplorer importId={currentImportId} />
+          ) : (
+            <div className="csv-empty-state-card">
+              <p style={{ color: 'var(--text-tertiary)' }}>Please upload a CSV file to inspect alerts.</p>
+            </div>
+          )}
+        </div>
 
-        {activeTab === 'groups' && (
-          <>
-            {summaryData ? (
-              <CsvGroupsExplorer importId={currentImportId} />
-            ) : (
-              <div className="csv-empty-state-card">
-                <p style={{ color: 'var(--text-tertiary)' }}>Please upload a CSV file to inspect groups.</p>
-              </div>
-            )}
-          </>
-        )}
-      </PageTransition>
+        {/* Tab 3: Dashboard & Charts */}
+        <div
+          className={`csv-tab-pane ${activeTab === 'dashboard' ? 'active' : ''}`}
+          role="tabpanel"
+          aria-hidden={activeTab !== 'dashboard'}
+        >
+          {summaryData ? (
+            <div className="csv-dashboard-charts-container">
+              <CsvAnalyticsCharts summary={summaryData} />
+            </div>
+          ) : (
+            <div className="csv-empty-state-card">
+              <h3>No CSV Log File Analyzed Yet</h3>
+              <p>
+                Click the <strong>Upload New CSV</strong> button above to load and correlate security events.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

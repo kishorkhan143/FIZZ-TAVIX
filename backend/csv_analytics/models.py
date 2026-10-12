@@ -88,18 +88,6 @@ class CsvAlert(Base):
     status = Column(String(32), default="OPEN", index=True)  # OPEN, INVESTIGATING, RESOLVED
     reasons = Column(Text, nullable=True)              # JSON: list of explanation strings
     related_events = Column(Text, nullable=True)       # JSON: list of related row numbers / IDs
-    source = Column(String(16), default="RULE", index=True)  # RULE, ML, or RULE+ML
-    
-    # ML fields
-    ml_prediction = Column(String(64), nullable=True)  # NORMAL, BRUTE_FORCE, PASSWORD_SPRAY, FAIL_THEN_SUCCESS, AFTER_HOURS, UNUSUAL_PATTERN
-    ml_risk = Column(Float, nullable=True)             # 0-100
-    ml_confidence = Column(Float, nullable=True)       # 0-1
-    ml_review_label = Column(Text, nullable=True)      # "Needs review - repeated failures" etc.
-    suggested_step = Column(Text, nullable=True)       # Human verification step
-    class_probabilities = Column(Text, nullable=True)  # JSON: probabilities for each class
-    evidence = Column(Text, nullable=True)             # JSON: detailed evidence (events, failures, etc.)
-    anomaly_score = Column(Float, nullable=True)       # 0-1 from IsolationForest
-    
     created_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -109,7 +97,6 @@ class CsvAlert(Base):
     __table_args__ = (
         Index("ix_csv_alerts_import_severity", "import_id", "severity"),
         Index("ix_csv_alerts_import_status", "import_id", "status"),
-        Index("ix_csv_alerts_import_source", "import_id", "source"),
     )
 
     def to_dict(self):
@@ -133,16 +120,6 @@ class CsvAlert(Base):
             "reasons": json.loads(self.reasons) if self.reasons else [],
             "reason": json.loads(self.reasons) if self.reasons else [],
             "related_events": json.loads(self.related_events) if self.related_events else [],
-            "source": self.source,
-            # ML fields
-            "ml_prediction": self.ml_prediction,
-            "ml_risk": round(self.ml_risk, 1) if self.ml_risk else None,
-            "ml_confidence": round(self.ml_confidence, 3) if self.ml_confidence else None,
-            "ml_review_label": self.ml_review_label,
-            "suggested_step": self.suggested_step,
-            "class_probabilities": json.loads(self.class_probabilities) if self.class_probabilities else {},
-            "evidence": json.loads(self.evidence) if self.evidence else {},
-            "anomaly_score": round(self.anomaly_score, 3) if self.anomaly_score else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 

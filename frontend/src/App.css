@@ -472,7 +472,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   flex: 1;
   min-height: 0;
   padding: 16px 20px 20px 20px;
-  overflow: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   /* Animation handled by motion/react */
@@ -482,6 +482,20 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   border: 1px solid #efefef;
 }
 
+.body.overview-mode,
+.body.terminals-mode,
+.body.csv-mode,
+.body.incidents-mode,
+.body:has(.incidents-section),
+.body:has(.csv-analytics-container),
+.body:has(.csv-groups-explorer),
+.body:has(.csv-alerts-explorer),
+.body:has(.lab-terminals-view) {
+  overflow: hidden !important;
+  overflow-y: hidden !important;
+  padding: 16px 20px 16px 20px;
+}
+
 /* ── Section ──────────────────────────────────────────────────────────────────– */
 .section {
   /* Animation handled by motion/react */
@@ -489,7 +503,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .section-header {
@@ -961,7 +975,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   padding: 0;
   margin-bottom: 20px;
   /* Animation handled by motion/react */
-  overflow: hidden;
+  overflow-y: auto;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
@@ -971,7 +985,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   border-radius: var(--radius-xl);
   padding: 0;
   margin-bottom: 20px;
-  overflow: hidden;
+  overflow-y: auto;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -1149,7 +1163,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
 .event-user {
   color: var(--accent);
   font-weight: 500;
-  overflow: hidden;
+  overflow-y: auto;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1157,7 +1171,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
 .alert-user {
   color: var(--accent);
   font-weight: 500;
-  overflow: hidden;
+  overflow-y: auto;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
@@ -1167,7 +1181,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: 12px;
-  overflow: hidden;
+  overflow-y: auto;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1176,7 +1190,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: 12px;
-  overflow: hidden;
+  overflow-y: auto;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
@@ -1226,7 +1240,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   font-size: 11px;
   letter-spacing: 0.02em;
   white-space: nowrap;
-  overflow: hidden;
+  overflow-y: auto;
   text-overflow: ellipsis;
   min-width: 0;
 }
@@ -1298,7 +1312,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   align-items: baseline;
   gap: 6px;
   min-width: 0;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .alert-type-name {
@@ -1306,7 +1320,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   font-weight: 600;
   color: #0f172a;
   white-space: nowrap;
-  overflow: hidden;
+  overflow-y: auto;
   text-overflow: ellipsis;
 }
 
@@ -1322,7 +1336,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   font-weight: 500;
   font-size: 13px;
   white-space: nowrap;
-  overflow: hidden;
+  overflow-y: auto;
   text-overflow: ellipsis;
   text-decoration: none;
   cursor: pointer;
@@ -1339,7 +1353,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   font-size: 12.5px;
   font-weight: 500;
   white-space: nowrap;
-  overflow: hidden;
+  overflow-y: auto;
   text-overflow: ellipsis;
 }
 
@@ -1348,7 +1362,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   font-family: var(--font-mono);
   font-size: 12px;
   white-space: nowrap;
-  overflow: hidden;
+  overflow-y: auto;
   text-overflow: ellipsis;
 }
 
@@ -1585,7 +1599,12 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
 .incidents-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden !important;
+  gap: 12px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -1597,6 +1616,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 2px;
+  flex-shrink: 0;
 }
 
 .incidents-heading {
@@ -1624,19 +1644,24 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
 /* Two-Panel Layout (40% events | 60% incidents) */
 .incidents-panels-grid {
   display: grid;
-  grid-template-columns: minmax(360px, 4fr) minmax(540px, 6fr);
+  grid-template-columns: minmax(0, 4fr) minmax(0, 6fr);
   gap: 12px;
   align-items: stretch;
   width: 100%;
   box-sizing: border-box;
-  flex: 1;
+  flex: 1 1 0px;
   min-height: 0;
+  height: 100%;
+  overflow: hidden !important;
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 960px) {
   .incidents-panels-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    grid-template-rows: 1fr 1fr;
+    gap: 12px;
+    height: 100%;
+    min-height: 0;
   }
 }
 
@@ -1649,9 +1674,11 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  overflow: hidden;
+  overflow: hidden !important;
   box-sizing: border-box;
+  flex: 1 1 0px;
   min-height: 0;
+  height: 100%;
 }
 
 .incidents-panel-header {
@@ -1697,18 +1724,19 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
 .events-table-container {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 1 1 0px;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  height: 100%;
+  overflow: hidden !important;
   background: #ffffff;
 }
 
 .events-table-header {
   display: grid;
-  grid-template-columns: 88px minmax(75px, 1fr) minmax(95px, 1.1fr) 46px 54px;
+  grid-template-columns: 105px minmax(75px, 1fr) minmax(95px, 1.1fr) 46px 54px;
   gap: 8px;
-  padding: 6px 12px;
+  padding: 8px 12px;
   background: #f8fafc;
   border-bottom: 1px solid #e2e8f0;
   font-size: 10.5px;
@@ -1719,6 +1747,9 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   user-select: none;
   box-sizing: border-box;
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .events-table-header .evt-hcol {
@@ -1733,24 +1764,42 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
 }
 
 .events-table-body {
-  flex: 1;
-  overflow-y: auto;
+  flex: 1 1 0px;
+  overflow-y: auto !important;
   overflow-x: hidden;
   scrollbar-width: thin;
   min-height: 0;
+  height: auto;
+}
+
+.events-table-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.events-table-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.events-table-body::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.45);
+  border-radius: 999px;
+}
+
+.events-table-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.65);
 }
 
 .events-table-body .event-row {
   display: grid;
-  grid-template-columns: 88px minmax(75px, 1fr) minmax(95px, 1.1fr) 46px 54px;
+  grid-template-columns: 105px minmax(75px, 1fr) minmax(95px, 1.1fr) 46px 54px;
   gap: 8px;
-  padding: 6px 12px;
+  padding: 8px 12px;
   align-items: center;
   border-bottom: 1px solid #f1f5f9;
   background: #ffffff;
   box-sizing: border-box;
   transition: background-color 0.12s ease;
-  min-height: 36px;
+  min-height: 44px;
 }
 
 .events-table-body .event-row:hover {
@@ -1767,6 +1816,16 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   min-width: 0;
 }
 
+.evt-cell.evt-col-time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  line-height: 1.25;
+}
+
 .evt-user-link,
 .evt-ip-text {
   display: block;
@@ -1781,15 +1840,19 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   font-size: 11.5px;
   font-weight: 600;
   color: #1e293b;
-  line-height: 1.4;
+  line-height: 1.25;
+  white-space: nowrap;
+  text-align: left;
 }
 
 .evt-date-val {
   font-family: var(--font-mono, monospace);
   font-size: 10px;
   color: #64748b;
-  line-height: 1.4;
-  margin-top: 2px;
+  line-height: 1.25;
+  white-space: nowrap;
+  text-align: left;
+  margin-top: 0;
 }
 
 .evt-user-link {
@@ -1870,16 +1933,17 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
 .detected-inc-container {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 1 1 0px;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  height: 100%;
+  overflow: hidden !important;
   background: #ffffff;
 }
 
 .detected-inc-header {
   display: grid;
-  grid-template-columns: minmax(185px, 1.9fr) minmax(85px, 0.9fr) minmax(95px, 0.95fr) minmax(110px, 1.1fr) minmax(95px, 0.95fr);
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 0.9fr);
   gap: 10px;
   padding: 9px 18px;
   background: #f8fafc;
@@ -1892,7 +1956,9 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   user-select: none;
   box-sizing: border-box;
   flex-shrink: 0;
-  min-width: 570px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .detected-inc-header .inc-hcol {
@@ -1906,16 +1972,35 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
 }
 
 .detected-inc-body {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: auto;
+  flex: 1 1 0px;
+  overflow-y: auto !important;
+  overflow-x: hidden;
   scrollbar-width: thin;
   min-height: 0;
+  height: auto;
+}
+
+.detected-inc-body::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.detected-inc-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.detected-inc-body::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.45);
+  border-radius: 999px;
+}
+
+.detected-inc-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.65);
 }
 
 .detected-inc-row {
   display: grid;
-  grid-template-columns: minmax(185px, 1.9fr) minmax(85px, 0.9fr) minmax(95px, 0.95fr) minmax(110px, 1.1fr) minmax(95px, 0.95fr);
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 0.9fr);
   gap: 10px;
   padding: 8px 18px;
   align-items: center;
@@ -1925,7 +2010,6 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   box-sizing: border-box;
   transition: background-color 0.12s ease;
   min-height: 44px;
-  min-width: 570px;
 }
 
 .detected-inc-row:hover {
@@ -1977,7 +2061,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   align-items: baseline;
   gap: 5px;
   min-width: 0;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .inc-type-name {
@@ -2001,7 +2085,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   font-size: 12.5px;
   text-decoration: none;
   white-space: nowrap;
-  overflow: hidden;
+  overflow-y: auto;
   text-overflow: ellipsis;
   display: inline-block;
   max-width: 100%;
@@ -2019,6 +2103,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: block;
 }
 
 .inc-ip-text {
@@ -2028,6 +2113,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: block;
 }
 
 .inc-cell.inc-col-status {
@@ -2099,7 +2185,8 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 200px;
+  flex: 1;
+  min-height: 140px;
   color: #94a3b8;
   font-size: 13px;
 }
@@ -2302,7 +2389,7 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
     /* On mobile, sidebar is overlaid, so main-content fills full width */
     width: 100%;
     height: 100%;
-    overflow: hidden;
+    overflow-y: auto;
   }
 
   .header {
@@ -2372,10 +2459,15 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   }
 }
 
-/* ── Overview recent events row ────────────────────────────────────────── */
+/* ── Overview recent events table & fixed panel layout ────────────────── */
 .recent-events-table {
-  overflow-x: auto;
-  overflow-y: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  width: 100%;
 }
 
 .recent-events-table .events-table-header,
@@ -2390,12 +2482,46 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
 }
 
 .recent-events-table .events-table-header {
-  padding: 12px 18px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 10px 18px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .recent-events-table .events-table-header {
+  background: #1e293b;
+  border-bottom-color: #334155;
+}
+
+.recent-events-table .events-table-body {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+}
+
+.recent-events-table .events-table-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.recent-events-table .events-table-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.recent-events-table .events-table-body::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.45);
+  border-radius: 999px;
 }
 
 .recent-events-table .events-table-body .event-row {
-  min-height: 56px;
-  padding: 12px 18px;
+  min-height: 52px;
+  padding: 10px 18px;
 }
 
 .recent-events-table .evt-cell.evt-col-time {
@@ -2452,35 +2578,76 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   border-color: #fecaca;
 }
 
+/* ── Overview Section & Layout Container ──────────────────────────────── */
 .overview-section {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden !important;
+  gap: 0;
 }
 
-.overview-section > .section-header,
-.overview-section .stats-grid,
-.overview-section .overview-bottom-row,
-.overview-section > .alerts-panel {
-  margin-bottom: 0;
+.overview-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  flex-shrink: 0;
+  padding-bottom: 10px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #DCE5EF;
+  box-sizing: border-box;
+}
+
+.overview-heading {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a; /* Dark navy */
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+[data-theme="dark"] .overview-page-header {
+  border-bottom-color: rgba(220, 229, 239, 0.15);
+}
+
+[data-theme="dark"] .overview-heading {
+  color: #f8fafc;
+}
+
+.overview-section .stats-grid {
+  flex-shrink: 0;
+  margin-bottom: 16px;
 }
 
 .overview-bottom-row {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 20px;
-  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
 }
 
 .overview-bottom-row .events-panel {
   margin-bottom: 0;
+  flex: 1;
+  min-height: 0;
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* Prevent panel itself from scrolling */
 }
 
-.overview-bottom-row .events-panel .events-list {
-  flex: 1;
+.overview-bottom-row .events-panel .panel-header {
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg-secondary);
 }
 
 .overview-bottom-row .events-panel .empty-state {
@@ -2490,12 +2657,6 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   justify-content: center;
   padding: 24px 20px;
   min-height: 180px;
-}
-
-@media (max-width: 1024px) {
-  .overview-bottom-row {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* ── Dark Theme Overrides & Theme Toggle Styles ─────────────────────────── */
@@ -2678,4 +2839,209 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator {
   margin: auto !important;
   position: relative !important;
   max-height: 90vh !important;
+}
+
+
+/* Anomaly detection alert styling */
+.alert-badge-anomaly {
+  background: #8b5cf6;  /* Purple for anomalies */
+  color: white;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.alert-badge-rule {
+  background: #ef4444;  /* Red for rule-based */
+  color: white;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Alert type specific colors */
+.alert-type-FAILURE_VELOCITY {
+  border-left: 4px solid #8b5cf6;
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.alert-type-SUCCESS_ANOMALY {
+  border-left: 4px solid #a78bfa;
+  background: rgba(167, 139, 250, 0.08);
+}
+
+.alert-type-BURST_DETECTED {
+  border-left: 4px solid #c4b5fd;
+  background: rgba(196, 181, 253, 0.08);
+}
+
+.anomaly-reason {
+  color: #7c3aed;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(124, 58, 237, 0.05);
+  border-radius: 6px;
+  border-left: 3px solid #7c3aed;
+}
+
+/* ── Lab Terminals Fixed Viewport & Internal Scroll ────────────────────── */
+.lab-terminals-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden !important;
+  gap: 16px;
+}
+
+.lab-terminals-header {
+  flex-shrink: 0;
+}
+
+.lab-terminals-heading {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.lab-terminals-table-container {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto !important;
+  overflow-x: auto;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: var(--radius-xl, 14px);
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
+  scrollbar-width: thin;
+  position: relative;
+}
+
+.lab-terminals-table-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.lab-terminals-table-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.lab-terminals-table-container::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.45);
+  border-radius: 999px;
+}
+
+.lab-terminals-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+  font-size: 13px;
+}
+
+.lab-terminals-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.lab-terminals-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f8fafc;
+  color: var(--text-secondary, #475569);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-light, #e2e8f0);
+  white-space: nowrap;
+  box-shadow: 0 1px 0 var(--border-light, #e2e8f0);
+  user-select: none;
+}
+
+[data-theme="dark"] .lab-terminals-table thead th {
+  background: #1e293b;
+  color: #94a3b8;
+  border-bottom-color: #334155;
+  box-shadow: 0 1px 0 #334155;
+}
+
+.lab-terminals-table td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-light, #e2e8f0);
+  color: var(--text-primary);
+  vertical-align: middle;
+  background: var(--bg-card, #ffffff);
+}
+
+[data-theme="dark"] .lab-terminals-table td {
+  background: #111827;
+  border-bottom-color: #1f2937;
+}
+
+.lab-terminals-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.lab-terminals-table tbody tr {
+  transition: background-color var(--ios-duration-fast, 0.15s) var(--ios-ease, ease);
+}
+
+.lab-terminals-table tbody tr:hover td {
+  background: var(--bg-secondary, #f8fafc);
+}
+
+[data-theme="dark"] .lab-terminals-table tbody tr:hover td {
+  background: #1e293b;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--accent, #0066ff);
+  color: #ffffff;
+  border: 1px solid var(--accent, #0066ff);
+  border-radius: var(--radius-md, 8px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #0052cc;
+  border-color: #0052cc;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--bg-secondary, #f1f5f9);
+  color: var(--text-primary, #1e293b);
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-tertiary, #e2e8f0);
+  border-color: var(--border-normal, #cbd5e1);
 }

@@ -17,7 +17,7 @@ export default function PageTransition({ children, transitionKey, className = ''
       <motion.div
         key={transitionKey}
         className={`ios-page-container ${className}`}
-        style={{ width: '100%', minHeight: '100%' }}
+        style={{ width: '100%', height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', flex: 1 }}
         variants={pageVariant}
         initial="hidden"
         animate="visible"

@@ -72,6 +72,12 @@ def init_db() -> None:
                 "ON auth_events (source_host, raw_record_id)"
             )
         )
+        try:
+            rc_cols = [row[1] for row in connection.execute(text("PRAGMA table_info(remote_commands)")).fetchall()]
+            if rc_cols and "terminal_id" not in rc_cols:
+                connection.execute(text("DROP TABLE IF EXISTS remote_commands"))
+        except Exception:
+            pass
         connection.execute(
             text(
                 "CREATE TABLE IF NOT EXISTS remote_commands ("
@@ -112,32 +118,6 @@ def init_db() -> None:
                     "CREATE INDEX IF NOT EXISTS "
                     "ix_users_verification_token "
                     "ON users (verification_token)"
-                )
-            )
-        except Exception:
-            pass
-        # ML columns migration for csv_alerts (added in ML integration step)
-        for _col_ddl in [
-            "ALTER TABLE csv_alerts ADD COLUMN source VARCHAR(16) DEFAULT 'RULE'",
-            "ALTER TABLE csv_alerts ADD COLUMN ml_prediction VARCHAR(64)",
-            "ALTER TABLE csv_alerts ADD COLUMN ml_risk REAL",
-            "ALTER TABLE csv_alerts ADD COLUMN ml_confidence REAL",
-            "ALTER TABLE csv_alerts ADD COLUMN ml_review_label TEXT",
-            "ALTER TABLE csv_alerts ADD COLUMN suggested_step TEXT",
-            "ALTER TABLE csv_alerts ADD COLUMN class_probabilities TEXT",
-            "ALTER TABLE csv_alerts ADD COLUMN evidence TEXT",
-            "ALTER TABLE csv_alerts ADD COLUMN anomaly_score REAL",
-        ]:
-            try:
-                connection.execute(text(_col_ddl))
-            except Exception:
-                pass  # column already exists — safe to ignore
-        try:
-            connection.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS "
-                    "ix_csv_alerts_import_source "
-                    "ON csv_alerts (import_id, source)"
                 )
             )
         except Exception:

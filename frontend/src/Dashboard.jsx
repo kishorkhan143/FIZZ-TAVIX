@@ -325,15 +325,9 @@ function Header({ currentMenuLabel, currentCategory, onMenuToggle, isSidebarOpen
 // ── Status Card Component (for System Status grid) ────────────────────────────
 function StatusCard({ label, online, count }) {
   const isHealthy = online === true || (count !== undefined && count > 0);
-  let displayText = 'Offline';
-  
-  if (label === 'Collectors' || label === 'Collector') {
-    displayText = `${count || 0}`;
-  } else if (online === true) {
-    displayText = 'Online';
-  } else if (online === false) {
-    displayText = 'Offline';
-  }
+  const displayText = label === 'Collectors' 
+    ? `${count || 0}`
+    : isHealthy ? 'Online' : 'Offline';
 
   return (
     <div className={`status-card-inline ${isHealthy ? 'healthy' : 'unhealthy'}`}>
@@ -401,22 +395,21 @@ function OverviewSection({ events, alerts, onExecuteAction, onSelectAlert }) {
       animate="visible"
       exit="exit"
     >
-      <div className="section-header" style={{ marginBottom: !isToday ? '16px' : '0', minHeight: !isToday ? 'auto' : 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: '12px' }}>
-          {!isToday && (
-            <motion.div
-              className="viewing-past-date-pill"
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={springs.snappy}
-            >
-              <span>Viewing {displayDate}</span>
-              <button type="button" className="btn-back-to-live" onClick={resetToToday}>
-                Back to live
-              </button>
-            </motion.div>
-          )}
-        </div>
+      <div className="section-header overview-page-header">
+        <h2 className="overview-heading">Overview</h2>
+        {!isToday && (
+          <motion.div
+            className="viewing-past-date-pill"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={springs.snappy}
+          >
+            <span>Viewing {displayDate}</span>
+            <button type="button" className="btn-back-to-live" onClick={resetToToday}>
+              Back to live
+            </button>
+          </motion.div>
+        )}
       </div>
 
       <div className="stats-grid">
@@ -450,14 +443,8 @@ function OverviewSection({ events, alerts, onExecuteAction, onSelectAlert }) {
         ))}
       </div>
 
-      <motion.div
-        className="overview-bottom-row"
-        initial={{ opacity: 0, y: 16 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={springs.soft}
-        viewport={{ once: true, margin: '-40px' }}
-      >
-        {/* Left: Recent Events panel */}
+      <div className="overview-bottom-row">
+        {/* Full-width Recent Events panel */}
         <div className="events-panel">
           <div className="panel-header">
             <h3>Recent Events</h3>
@@ -469,27 +456,7 @@ function OverviewSection({ events, alerts, onExecuteAction, onSelectAlert }) {
             recent
           />
         </div>
-
-      </motion.div>
-
-      <motion.div
-        className="alerts-panel"
-        initial={{ opacity: 0, y: 16 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={springs.soft}
-        viewport={{ once: true, margin: '-40px' }}
-      >
-        <div className="panel-header">
-          <h3>Active Alerts</h3>
-          <span className="badge alert">{activeFilteredAlerts.length}</span>
-        </div>
-        <AlertList
-          alerts={activeFilteredAlerts}
-          emptyMessage={`No incidents on ${displayDate}`}
-          onExecuteAction={onExecuteAction}
-          onSelectAlert={onSelectAlert}
-        />
-      </motion.div>
+      </div>
     </motion.div>
   );
 }
@@ -515,7 +482,6 @@ function LiveTelemetrySection({ events, alerts, onExecuteAction, onSelectAlert }
       <div className="section-header incidents-page-header">
         <div>
           <h2 className="incidents-heading">Incidents</h2>
-          <p className="incidents-subheading">Authentication events and detected security incidents</p>
         </div>
         <div className="incidents-header-actions">
           {!isToday && (
@@ -540,10 +506,9 @@ function LiveTelemetrySection({ events, alerts, onExecuteAction, onSelectAlert }
         {/* Left: Authentication Events (~40%) */}
         <motion.div
           className="incidents-panel incidents-panel-events"
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={springs.soft}
-          viewport={{ once: true, margin: '-40px' }}
         >
           <div className="incidents-panel-header">
             <span className="incidents-panel-title">Authentication Events</span>
@@ -556,10 +521,9 @@ function LiveTelemetrySection({ events, alerts, onExecuteAction, onSelectAlert }
         {/* Right: Detected Incidents (~60%) */}
         <motion.div
           className="incidents-panel incidents-panel-incidents"
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={springs.soft}
-          viewport={{ once: true, margin: '-40px' }}
         >
           <div className="incidents-panel-header">
             <span className="incidents-panel-title">Detected Incidents</span>
@@ -744,7 +708,7 @@ function SettingsSection({ health, user, token, onLogout, onUpdateUser }) {
         <div className="system-status-grid">
           <StatusCard label="Backend" online={isBackendOnline} />
           <StatusCard label="Database" online={isDbOnline} />
-          <StatusCard label="Collector" online={isCollectorOnline} />
+          <StatusCard label="Collectors" count={health?.collector_count || 0} />
           <StatusCard label="SMTP Config" online={health?.smtp_configured === true} />
         </div>
       </div>
@@ -767,14 +731,6 @@ function SettingsSection({ health, user, token, onLogout, onUpdateUser }) {
             <span style={{ color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600 }}>Frontend</span>
             <div style={{ color: 'var(--text-primary)', fontWeight: 500, marginTop: '4px' }}>{window.location.origin}</div>
           </div>
-          {health?.collector_hostname && (
-            <div>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600 }}>Collector (Laptop)</span>
-              <div style={{ color: 'var(--text-primary)', fontWeight: 500, marginTop: '4px' }}>
-                {health.collector_hostname} ({health.collector_ip || 'N/A'})
-              </div>
-            </div>
-          )}
           {health && (
             <div>
               <span style={{ color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600 }}>Uptime</span>
@@ -791,14 +747,6 @@ function SettingsSection({ health, user, token, onLogout, onUpdateUser }) {
 function EventsTable({ events, emptyMessage = 'No events to display', recent = false }) {
   const motionPrefs = useMotionPrefs();
   const listVariants = motionPrefs.listItem || variants.listItem;
-  
-  if (!events.length) {
-    return (
-      <div className="events-empty-state">
-        <p>{emptyMessage}</p>
-      </div>
-    );
-  }
 
   return (
     <div className={`events-table-container ${recent ? 'recent-events-table' : ''}`}>
@@ -823,93 +771,99 @@ function EventsTable({ events, emptyMessage = 'No events to display', recent = f
         )}
       </div>
       <div className="events-table-body">
-        <AnimatePresence initial={false}>
-          {events.map((ev, idx) => {
-            const timeStr = fmtTime(ev.timestamp);
-            const dateStr = formatDisplayDate(getItemDateString(ev.timestamp));
-            const risk = (ev.risk_level || 'LOW').toUpperCase();
-            const isHigh = risk === 'HIGH' || risk === 'CRITICAL';
-            const computer = ev.target_computer || ev.source_host || '—';
-            const eventLabel =
-              ev.logon_type_description ||
-              (ev.status === 'SUCCESS'
-                ? 'Successful logon'
-                : ev.status === 'FAILURE'
-                  ? 'Failed logon'
-                  : ev.status || '—');
-            const departmentCase =
-              ev.department_case || ev.department || ev.case || '—';
+        {!events.length ? (
+          <div className="events-empty-state">
+            <p>{emptyMessage}</p>
+          </div>
+        ) : (
+          <AnimatePresence initial={false}>
+            {events.map((ev, idx) => {
+              const timeStr = fmtTime(ev.timestamp);
+              const dateStr = formatDisplayDate(getItemDateString(ev.timestamp));
+              const risk = (ev.risk_level || 'LOW').toUpperCase();
+              const isHigh = risk === 'HIGH' || risk === 'CRITICAL';
+              const computer = ev.target_computer || ev.source_host || '—';
+              const eventLabel =
+                ev.logon_type_description ||
+                (ev.status === 'SUCCESS'
+                  ? 'Successful logon'
+                  : ev.status === 'FAILURE'
+                    ? 'Failed logon'
+                    : ev.status || '—');
+              const departmentCase =
+                ev.department_case || ev.department || ev.case || '—';
 
-            return (
-              <motion.div
-                key={ev.id || `${ev.event_id}-${ev.timestamp}-${ev.username}`}
-                layout="position"
-                variants={listVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                transition={idx < 5 ? undefined : { delay: Math.min(idx * 0.02, 0.1) }}
-                className={`event-row status-${ev.status?.toLowerCase() || 'unknown'}`}
-              >
-                {recent ? (
-                  <>
-                    <div className="evt-cell evt-col-event-id">
-                      <span className="evt-event-id">{ev.event_id ?? '—'}</span>
-                    </div>
-                    <div className="evt-cell evt-col-time" title={ev.timestamp || ''}>
-                      <span className="evt-timestamp">{fmtDateTime(ev.timestamp)}</span>
-                    </div>
-                    <div className="evt-cell evt-col-user" title={`Account: ${ev.username || '—'}`}>
-                      <span className="evt-user-link">{ev.username || '—'}</span>
-                    </div>
-                    <div className="evt-cell evt-col-computer" title={`Computer: ${computer}`}>
-                      <span className="evt-computer-text">{computer}</span>
-                    </div>
-                    <div className="evt-cell evt-col-event" title={`Event: ${eventLabel}`}>
-                      <span className={`evt-event-type ${ev.status?.toLowerCase() || ''}`}>
-                        {eventLabel}
-                      </span>
-                    </div>
-                    <div className="evt-cell evt-col-department-case" title={`Department_Case: ${departmentCase}`}>
-                      <span className="evt-department-case">{departmentCase}</span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="evt-cell evt-col-time">
-                      <div className="evt-time-val">{timeStr}</div>
-                      <div className="evt-date-val">{dateStr}</div>
-                    </div>
-                    <div className="evt-cell evt-col-user">
-                      <span className="evt-user-link" title={`User: ${ev.username || '—'}`}>
-                        {ev.username || '—'}
-                      </span>
-                    </div>
-                    <div className="evt-cell evt-col-ip" title={`IP: ${ev.source_ip || '—'}`}>
-                      <span className="evt-ip-text">{ev.source_ip || '—'}</span>
-                    </div>
-                    <div className="evt-cell evt-col-status">
-                      {ev.status === 'SUCCESS' ? (
-                        <span className="evt-status-icon success" title="Successful authentication">
-                          <Icon name="check-circle" size={15} />
+              return (
+                <motion.div
+                  key={ev.id || `${ev.event_id}-${ev.timestamp}-${ev.username}`}
+                  layout="position"
+                  variants={listVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  transition={idx < 5 ? undefined : { delay: Math.min(idx * 0.02, 0.1) }}
+                  className={`event-row status-${ev.status?.toLowerCase() || 'unknown'}`}
+                >
+                  {recent ? (
+                    <>
+                      <div className="evt-cell evt-col-event-id">
+                        <span className="evt-event-id">{ev.event_id ?? '—'}</span>
+                      </div>
+                      <div className="evt-cell evt-col-time" title={ev.timestamp || ''}>
+                        <span className="evt-timestamp">{fmtDateTime(ev.timestamp)}</span>
+                      </div>
+                      <div className="evt-cell evt-col-user" title={`Account: ${ev.username || '—'}`}>
+                        <span className="evt-user-link">{ev.username || '—'}</span>
+                      </div>
+                      <div className="evt-cell evt-col-computer" title={`Computer: ${computer}`}>
+                        <span className="evt-computer-text">{computer}</span>
+                      </div>
+                      <div className="evt-cell evt-col-event" title={`Event: ${eventLabel}`}>
+                        <span className={`evt-event-type ${ev.status?.toLowerCase() || ''}`}>
+                          {eventLabel}
                         </span>
-                      ) : (
-                        <span className="evt-status-icon failure" title="Failed authentication">
-                          <Icon name="x-circle" size={15} />
+                      </div>
+                      <div className="evt-cell evt-col-department-case" title={`Department_Case: ${departmentCase}`}>
+                        <span className="evt-department-case">{departmentCase}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="evt-cell evt-col-time">
+                        <div className="evt-time-val">{timeStr}</div>
+                        <div className="evt-date-val">{dateStr}</div>
+                      </div>
+                      <div className="evt-cell evt-col-user">
+                        <span className="evt-user-link" title={`User: ${ev.username || '—'}`}>
+                          {ev.username || '—'}
                         </span>
-                      )}
-                    </div>
-                    <div className="evt-cell evt-col-sev">
-                      <span className={`evt-severity-tag ${isHigh ? 'high' : 'low'}`}>
-                        {isHigh ? 'HIGH' : 'LOW'}
-                      </span>
-                    </div>
-                  </>
-                )}
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
+                      </div>
+                      <div className="evt-cell evt-col-ip" title={`IP: ${ev.source_ip || '—'}`}>
+                        <span className="evt-ip-text">{ev.source_ip || '—'}</span>
+                      </div>
+                      <div className="evt-cell evt-col-status">
+                        {ev.status === 'SUCCESS' ? (
+                          <span className="evt-status-icon success" title="Successful authentication">
+                            <Icon name="check-circle" size={15} />
+                          </span>
+                        ) : (
+                          <span className="evt-status-icon failure" title="Failed authentication">
+                            <Icon name="x-circle" size={15} />
+                          </span>
+                        )}
+                      </div>
+                      <div className="evt-cell evt-col-sev">
+                        <span className={`evt-severity-tag ${isHigh ? 'high' : 'low'}`}>
+                          {isHigh ? 'HIGH' : 'LOW'}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        )}
       </div>
     </div>
   );
@@ -924,14 +878,6 @@ function DetectedIncidentsTable({
   const motionPrefs = useMotionPrefs();
   const listVariants = motionPrefs.listItem || variants.listItem;
 
-  if (!alerts.length) {
-    return (
-      <div className="incidents-empty-state">
-        <p>{emptyMessage}</p>
-      </div>
-    );
-  }
-
   return (
     <div className="detected-inc-container">
       <div className="detected-inc-header">
@@ -942,112 +888,118 @@ function DetectedIncidentsTable({
         <div className="inc-hcol inc-col-status">Status</div>
       </div>
       <div className="detected-inc-body">
-        <AnimatePresence initial={false}>
-          {alerts.map((al, idx) => {
-            const rawType = alertTypeLabel(al.alert_type);
-            const status = (al.status || (al.resolved ? 'RESOLVED' : 'OPEN')).toUpperCase();
-            const machine = getAlertMachine(al) || '—';
-            const ip = al.source_ip || '—';
-            const risk = (al.risk_level || 'UNKNOWN').toUpperCase();
-            const isHighOrCritical = risk === 'HIGH' || risk === 'CRITICAL';
-            const count = al.failure_count ?? al.event_count ?? 0;
+        {!alerts.length ? (
+          <div className="incidents-empty-state">
+            <p>{emptyMessage}</p>
+          </div>
+        ) : (
+          <AnimatePresence initial={false}>
+            {alerts.map((al, idx) => {
+              const rawType = alertTypeLabel(al.alert_type);
+              const status = (al.status || (al.resolved ? 'RESOLVED' : 'OPEN')).toUpperCase();
+              const machine = getAlertMachine(al) || '—';
+              const ip = al.source_ip || '—';
+              const risk = (al.risk_level || 'UNKNOWN').toUpperCase();
+              const isHighOrCritical = risk === 'HIGH' || risk === 'CRITICAL';
+              const count = al.failure_count ?? al.event_count ?? 0;
 
-            return (
-              <motion.div
-                key={al.id}
-                layout="position"
-                variants={listVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                transition={idx < 5 ? undefined : { delay: Math.min(idx * 0.02, 0.1) }}
-                className={`detected-inc-row severity-${risk.toLowerCase()}`}
-                onClick={() => onSelectAlert && onSelectAlert(al)}
-                title="Click to view full incident details"
-              >
-                {/* 1. Severity & Type */}
-                <div className="inc-cell inc-col-type">
-                  <span className={`inc-severity-badge ${isHighOrCritical ? 'high' : 'normal'}`}>
-                    {risk}
-                  </span>
-                  <div className="inc-type-wrap">
-                    <span className="inc-type-name">{rawType}</span>
-                    {count > 1 && (
-                      <span className="inc-count-tag">
-                        ({count} attempts)
+              return (
+                <motion.div
+                  key={al.id}
+                  layout="position"
+                  variants={listVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  transition={idx < 5 ? undefined : { delay: Math.min(idx * 0.02, 0.1) }}
+                  className={`detected-inc-row severity-${risk.toLowerCase()}`}
+                  onClick={() => onSelectAlert && onSelectAlert(al)}
+                  title="Click to view full incident details"
+                >
+                  {/* 1. Severity & Type */}
+                  <div className="inc-cell inc-col-type">
+                    <span className={`inc-severity-badge ${isHighOrCritical ? 'high' : 'normal'}`}>
+                      {risk}
+                    </span>
+                    <div className="inc-type-wrap">
+                      <span className="inc-type-name">{rawType}</span>
+                      {count > 1 && (
+                        <span className="inc-count-tag">
+                          ({count} attempts)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 2. User */}
+                  <div className="inc-cell inc-col-user">
+                    <span
+                      className="inc-user-link"
+                      title={al.username ? `User: ${al.username}` : 'No user identified'}
+                    >
+                      {al.username || '—'}
+                    </span>
+                  </div>
+
+                  {/* 3. Device */}
+                  <div className="inc-cell inc-col-device" title={`Device: ${machine}`}>
+                    <span className="inc-device-text">{machine}</span>
+                  </div>
+
+                  {/* 4. IP Address */}
+                  <div className="inc-cell inc-col-ip" title={`IP: ${ip}`}>
+                    <span className="inc-ip-text">{ip}</span>
+                  </div>
+
+                  {/* 5. Status */}
+                  <div className="inc-cell inc-col-status">
+                    {status === 'AUTHORIZED' ? (
+                      <button
+                        type="button"
+                        className="inc-status-btn authorized"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectAlert && onSelectAlert(al);
+                        }}
+                        title="Authorized benign event"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                          <polyline points="9 12 11 14 15 10" />
+                        </svg>
+                        <span>Authorized</span>
+                      </button>
+                    ) : status === 'REMEDIATING' ? (
+                      <span className="inc-status-badge remediating">
+                        Remediating
                       </span>
+                    ) : status === 'RESOLVED' ? (
+                      <span className="inc-status-badge resolved">
+                        Resolved
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="inc-status-btn review"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectAlert && onSelectAlert(al);
+                        }}
+                        title="Review security incident"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="11" cy="11" r="8" />
+                          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                        <span>Review</span>
+                      </button>
                     )}
                   </div>
-                </div>
-
-                {/* 2. User */}
-                <div className="inc-cell inc-col-user">
-                  <span
-                    className="inc-user-link"
-                    title={al.username ? `User: ${al.username}` : 'No user identified'}
-                  >
-                    {al.username || '—'}
-                  </span>
-                </div>
-
-                {/* 3. Device */}
-                <div className="inc-cell inc-col-device" title={`Device: ${machine}`}>
-                  <span className="inc-device-text">{machine}</span>
-                </div>
-
-                {/* 4. IP Address */}
-                <div className="inc-cell inc-col-ip" title={`IP: ${ip}`}>
-                  <span className="inc-ip-text">{ip}</span>
-                </div>
-
-                {/* 5. Status */}
-                <div className="inc-cell inc-col-status">
-                  {status === 'AUTHORIZED' ? (
-                    <button
-                      type="button"
-                      className="inc-status-btn authorized"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectAlert && onSelectAlert(al);
-                      }}
-                      title="Authorized benign event"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                        <polyline points="9 12 11 14 15 10" />
-                      </svg>
-                      <span>Authorized</span>
-                    </button>
-                  ) : status === 'REMEDIATING' ? (
-                    <span className="inc-status-badge remediating">
-                      Remediating
-                    </span>
-                  ) : status === 'RESOLVED' ? (
-                    <span className="inc-status-badge resolved">
-                      Resolved
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      className="inc-status-btn review"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectAlert && onSelectAlert(al);
-                      }}
-                      title="Review security incident"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="11" cy="11" r="8" />
-                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                      </svg>
-                      <span>Review</span>
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        )}
       </div>
     </div>
   );
@@ -1390,7 +1342,7 @@ export default function Dashboard({ user, token, onLogout, onUpdateUser }) {
             isSidebarOpen={isSidebarOpen}
           />
           
-          <div className="body">
+          <div className={`body ${activeMenu === 'overview' ? 'overview-mode' : ''} ${activeMenu === 'terminals' ? 'terminals-mode' : ''} ${activeMenu === 'csv' ? 'csv-mode' : ''} ${activeMenu === 'live' ? 'incidents-mode' : ''}`}>
             <PageTransition transitionKey={`${activeMenu}-${selectedLab?.id || ''}-${selectedComputer?.terminal_id || ''}`}>
               {activeMenu === 'overview' && (
                 <OverviewSection

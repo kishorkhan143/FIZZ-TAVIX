@@ -62,7 +62,7 @@ export default function CsvAnalyticsCharts({ summary }) {
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}
           >
             <div style={{ flex: 1, height: '100%', minHeight: '220px' }}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={220}>
                 <PieChart>
                   <Pie
                     data={outcomeData.length > 0 ? outcomeData : [{ name: 'No Events', value: 1, color: '#e5e7eb' }]}
@@ -107,8 +107,8 @@ export default function CsvAnalyticsCharts({ summary }) {
               <div className="chart-title">Risk Level Distribution</div>
             </div>
           </div>
-          <div className="chart-body">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="chart-body" style={{ minHeight: '220px' }}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={220}>
               <BarChart data={riskDistData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <XAxis dataKey="band" tick={{ fontSize: 11, fontWeight: 600 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
@@ -131,9 +131,9 @@ export default function CsvAnalyticsCharts({ summary }) {
             <div className="chart-title">Events Over Time</div>
           </div>
         </div>
-        <div className="chart-body" style={{ height: '260px' }}>
+        <div className="chart-body" style={{ height: '260px', minHeight: '260px' }}>
           {timelineData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={260}>
               <AreaChart data={timelineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorEvents" x1="0" y1="0" x2="0" y2="1">

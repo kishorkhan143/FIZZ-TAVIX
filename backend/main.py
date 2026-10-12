@@ -23,10 +23,6 @@ import os
 import sys
 import time
 
-# Load environment variables from .env file
-from dotenv import load_dotenv
-load_dotenv()
-
 # Ensure backend directory is in sys.path
 backend_dir = os.path.dirname(os.path.abspath(__file__))
 if backend_dir not in sys.path:
@@ -93,7 +89,10 @@ logger = logging.getLogger("authsentinel.backend")
 _start_time = time.monotonic()
 COLLECTOR_STALE_SECONDS = 45
 COLLECTOR_HEARTBEAT_INTERVAL_SECONDS = 15
-LOCAL_TIMEZONE = ZoneInfo("UTC")
+try:
+    LOCAL_TIMEZONE = ZoneInfo("Asia/Kolkata")
+except Exception:
+    LOCAL_TIMEZONE = timezone(timedelta(hours=5, minutes=30))
 # Track each collector by label (LAPTOP-A, LAPTOP-B, …)
 _collectors: dict[str, dict] = {}
 
@@ -1458,3 +1457,4 @@ if __name__ == "__main__":
         port=settings.port,
         log_level="info",
     )
+

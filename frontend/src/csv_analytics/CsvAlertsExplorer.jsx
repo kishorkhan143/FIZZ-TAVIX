@@ -7,7 +7,6 @@ export default function CsvAlertsExplorer({ importId }) {
   const [alerts, setAlerts] = useState([]);
   const [severityFilter, setSeverityFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [sourceFilter, setSourceFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState(null);
 
@@ -18,7 +17,6 @@ export default function CsvAlertsExplorer({ importId }) {
       if (importId) url += `import_id=${importId}&`;
       if (severityFilter !== 'ALL') url += `severity=${severityFilter}&`;
       if (statusFilter !== 'ALL') url += `status=${statusFilter}&`;
-      if (sourceFilter !== 'all') url += `source=${sourceFilter}&`;
 
       const res = await fetch(url);
       if (res.ok) {
@@ -30,7 +28,7 @@ export default function CsvAlertsExplorer({ importId }) {
     } finally {
       setIsLoading(false);
     }
-  }, [importId, severityFilter, statusFilter, sourceFilter]);
+  }, [importId, severityFilter, statusFilter]);
 
   useEffect(() => {
     fetchAlerts();
@@ -55,7 +53,7 @@ export default function CsvAlertsExplorer({ importId }) {
   });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div className="csv-alerts-explorer">
       {/* Filters Bar */}
       <div className="grouping-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
@@ -95,24 +93,6 @@ export default function CsvAlertsExplorer({ importId }) {
               style={{ minWidth: '140px' }}
             />
           </div>
-
-          {/* Source Filter Dropdown */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-              Source:
-            </span>
-            <CustomSelect
-              value={sourceFilter}
-              onChange={(e) => setSourceFilter(e.target.value)}
-              options={[
-                { value: 'all', label: 'All' },
-                { value: 'rule', label: 'Rule Only' },
-                { value: 'ml', label: 'ML Only' },
-                { value: 'both', label: 'Rule + ML' },
-              ]}
-              style={{ minWidth: '130px' }}
-            />
-          </div>
         </div>
 
         <div style={{ fontSize: '12.5px', fontWeight: 500, color: 'var(--text-tertiary)', background: 'var(--bg-secondary)', padding: '6px 14px', borderRadius: '100px', border: '1px solid var(--border-light)' }}>
@@ -121,8 +101,8 @@ export default function CsvAlertsExplorer({ importId }) {
       </div>
 
       {/* Security Alerts Table: User | Source IP | Count | Attack / Alert Type | Risk Level | Action */}
-      <div className="data-table-container">
-        <table className="data-table">
+      <div className="csv-alerts-table-container">
+        <table className="csv-alerts-table data-table">
           <thead>
             <tr>
               <th>User</th>
@@ -130,20 +110,19 @@ export default function CsvAlertsExplorer({ importId }) {
               <th>Count</th>
               <th>Attack / Alert Type</th>
               <th>Risk Level</th>
-              <th>ML Review</th>
               <th>Action</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan="7" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-tertiary)' }}>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-tertiary)' }}>
                   Loading security alerts...
                 </td>
               </tr>
             ) : filteredAlerts.length === 0 ? (
               <tr>
-                <td colSpan="7" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-tertiary)' }}>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-tertiary)' }}>
                   No security alerts match the selected filters
                 </td>
               </tr>
@@ -169,24 +148,6 @@ export default function CsvAlertsExplorer({ importId }) {
                   <td style={{ fontWeight: 600 }}>{(al.type || '').replace(/_/g, ' ')}</td>
                   <td>
                     <span className={`severity-pill ${al.severity}`}>{al.severity}</span>
-                  </td>
-                  <td>
-                    {(al.source === 'ML' || al.source === 'RULE+ML') && al.ml_review_label
-                      ? (
-                        <span style={{
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          padding: '2px 8px',
-                          borderRadius: '100px',
-                          background: (al.ml_risk || 0) >= 70 ? 'rgba(239,68,68,0.15)' : (al.ml_risk || 0) >= 40 ? 'rgba(245,158,11,0.15)' : 'rgba(16,185,129,0.15)',
-                          color: (al.ml_risk || 0) >= 70 ? '#ef4444' : (al.ml_risk || 0) >= 40 ? '#f59e0b' : '#10b981',
-                          whiteSpace: 'nowrap',
-                        }}>
-                          {al.ml_review_label}
-                        </span>
-                      )
-                      : <span style={{ color: 'var(--text-tertiary)', fontSize: '12px' }}>—</span>
-                    }
                   </td>
                   <td>
                     <button
