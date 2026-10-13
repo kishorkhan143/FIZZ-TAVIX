@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { springs } from '../../motion';
 import AddLabModal from './AddLabModal';
 import { formatDateTime } from '../../useAuthSentinel';
 
@@ -11,6 +13,7 @@ export default function LaboratoriesView({
   onUpdateLabHours,
 }) {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [expandedLabId, setExpandedLabId] = useState(null);
   const [startTime, setStartTime] = useState(labHours?.start_time || '09:00');
   const [endTime, setEndTime] = useState(labHours?.end_time || '18:00');
   const [savedToast, setSavedToast] = useState(false);
@@ -266,131 +269,193 @@ export default function LaboratoriesView({
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '14px' }}>
-          {labs.map((lab, idx) => (
-            <div
-              key={lab.id}
-              id={`lab-card-${lab.id}`}
-              onClick={() => onSelectLab && onSelectLab(lab)}
-              className="lab-card"
-              style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-light)',
-                borderRadius: 'var(--radius-lg, 14px)',
-                padding: '14px 16px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                boxShadow: 'var(--ios-shadow-subtle, var(--shadow-sm))',
-                cursor: 'pointer',
-                transition: 'transform var(--ios-duration-normal, 0.26s) var(--ios-spring-soft, cubic-bezier(0.16, 1, 0.3, 1)), box-shadow var(--ios-duration-normal, 0.26s) var(--ios-ease), border-color var(--ios-duration-normal, 0.26s) var(--ios-ease)',
-                animation: 'iosFadeInUp var(--ios-duration-smooth, 0.34s) var(--ios-spring-soft, cubic-bezier(0.16, 1, 0.3, 1)) both',
-                animationDelay: `${idx * 40}ms`,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--accent)';
-                e.currentTarget.style.boxShadow = 'var(--ios-shadow-card-hover)';
-                e.currentTarget.style.transform = 'translateY(-3px) scale(1.01)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-light)';
-                e.currentTarget.style.boxShadow = 'var(--ios-shadow-subtle, var(--shadow-sm))';
-                e.currentTarget.style.transform = 'translateY(0) scale(1)';
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span
+          {labs.map((lab, idx) => {
+            const isExpanded = expandedLabId === lab.id;
+
+            return (
+              <motion.div
+                key={lab.id}
+                id={`lab-card-${lab.id}`}
+                role="button"
+                tabIndex={0}
+                aria-expanded={isExpanded}
+                onClick={() => setExpandedLabId(isExpanded ? null : lab.id)}
+                className={`lab-card ios-expandable-card ${isExpanded ? 'is-expanded' : ''}`}
+                style={{
+                  background: 'var(--bg-card)',
+                  border: isExpanded ? '1.5px solid var(--accent)' : '1px solid var(--border-light)',
+                  borderRadius: 'var(--radius-lg, 14px)',
+                  padding: '14px 16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  boxShadow: isExpanded ? 'var(--ios-shadow-card-hover)' : 'var(--ios-shadow-subtle, var(--shadow-sm))',
+                  cursor: 'pointer',
+                  transform: isExpanded ? 'scale(1.02)' : 'none',
+                  transition: 'all 0.26s cubic-bezier(0.16, 1, 0.3, 1)',
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '10.5px',
+                        fontWeight: 700,
+                        background: 'var(--accent-light)',
+                        color: 'var(--accent)',
+                        padding: '2px 7px',
+                        borderRadius: '5px',
+                      }}
+                    >
+                      {lab.id}
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span
+                        style={{
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          background: isWithinHours ? '#ecfdf5' : '#fee2e2',
+                          color: isWithinHours ? '#059669' : '#dc2626',
+                        }}
+                      >
+                        {isWithinHours ? 'Open' : 'Off-Hours'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteLab(lab.id);
+                        }}
+                        title="Delete Laboratory"
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'var(--text-tertiary)',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          padding: '2px 4px',
+                          lineHeight: 1,
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+
+                  <h4 style={{ fontSize: '14.5px', fontWeight: 700, margin: '0 0 4px 0', color: 'var(--text-primary)' }}>
+                    {lab.name}
+                  </h4>
+
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 8px 0', lineHeight: 1.35 }}>
+                    {lab.description || 'No description provided.'}
+                  </p>
+
+                  {lab.location && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: 'var(--text-tertiary)', marginBottom: '6px' }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                      <span>{lab.location}</span>
+                    </div>
+                  )}
+
+                  {/* Lab Hours info on card */}
+                  <div
                     style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '10.5px',
-                      fontWeight: 700,
-                      background: 'var(--accent-light)',
-                      color: 'var(--accent)',
-                      padding: '2px 7px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontSize: '11px',
+                      color: 'var(--text-secondary)',
+                      marginTop: '4px',
+                      padding: '3px 6px',
+                      background: 'var(--bg-secondary)',
                       borderRadius: '5px',
                     }}
                   >
-                    {lab.id}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteLab(lab.id);
-                    }}
-                    title="Delete Laboratory"
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-tertiary)' }}>
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <span>Hours: <strong>{startTime} - {endTime}</strong></span>
+                  </div>
+                </div>
+
+                {/* Inline Expandable Drawer */}
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={springs.soft}
+                      className="ios-expand-detail-panel"
+                      style={{ marginTop: '12px', borderTop: '1px solid var(--border-light)', paddingTop: '10px' }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="ios-expand-header-action" style={{ marginBottom: '8px' }}>
+                        <span className="ios-expand-title">Lab Details</span>
+                        <button
+                          type="button"
+                          className="ios-collapse-btn"
+                          onClick={() => setExpandedLabId(null)}
+                        >
+                          ✕ Collapse
+                        </button>
+                      </div>
+
+                      <div className="ios-meta-grid" style={{ gridTemplateColumns: '1fr', gap: '8px' }}>
+                        <div className="ios-meta-item">
+                          <span className="ios-meta-label">Environment Status</span>
+                          <span className="ios-meta-value" style={{ color: isWithinHours ? '#10b981' : '#f59e0b' }}>
+                            {isWithinHours ? 'Active Scheduled Session' : 'Off-Schedule Surveillance'}
+                          </span>
+                        </div>
+                        <div className="ios-meta-item">
+                          <span className="ios-meta-label">Assigned Terminals</span>
+                          <span className="ios-meta-value">Monitored Lab Workstations</span>
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: '10px' }}>
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          style={{ width: '100%', padding: '6px 12px', fontSize: '12px', fontWeight: 600 }}
+                          onClick={() => onSelectLab && onSelectLab(lab)}
+                        >
+                          View Connected Computers ↗
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {!isExpanded && (
+                  <div
                     style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'var(--text-tertiary)',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      padding: '2px 4px',
-                      lineHeight: 1,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginTop: '10px',
+                      paddingTop: '8px',
+                      borderTop: '1px solid var(--border-light)',
+                      fontSize: '11.5px',
+                      color: 'var(--accent)',
+                      fontWeight: 600,
                     }}
                   >
-                    ✕
-                  </button>
-                </div>
-
-                <h4 style={{ fontSize: '14.5px', fontWeight: 700, margin: '0 0 4px 0', color: 'var(--text-primary)' }}>
-                  {lab.name}
-                </h4>
-
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 8px 0', lineHeight: 1.35 }}>
-                  {lab.description || 'No description provided.'}
-                </p>
-
-                {lab.location && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: 'var(--text-tertiary)', marginBottom: '6px' }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                      <circle cx="12" cy="10" r="3" />
-                    </svg>
-                    <span>{lab.location}</span>
+                    <span>Click to expand details</span>
+                    <span>▾</span>
                   </div>
                 )}
-
-                {/* Lab Hours info on card */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    fontSize: '11px',
-                    color: 'var(--text-secondary)',
-                    marginTop: '4px',
-                    padding: '3px 6px',
-                    background: 'var(--bg-secondary)',
-                    borderRadius: '5px',
-                  }}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-tertiary)' }}>
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                  </svg>
-                  <span>Hours: <strong>{startTime} - {endTime}</strong></span>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginTop: '10px',
-                  paddingTop: '8px',
-                  borderTop: '1px solid var(--border-light)',
-                  fontSize: '11.5px',
-                  color: 'var(--accent)',
-                  fontWeight: 600,
-                }}
-              >
-                <span>View connected computers</span>
-                <span>→</span>
-              </div>
-            </div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       )}
 

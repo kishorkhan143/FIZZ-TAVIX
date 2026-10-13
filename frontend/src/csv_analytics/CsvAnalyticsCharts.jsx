@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { springs } from '../motion';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -13,6 +16,8 @@ import {
 } from 'recharts';
 
 export default function CsvAnalyticsCharts({ summary }) {
+  const [expandedChart, setExpandedChart] = useState(null);
+
   if (!summary || !summary.analysis_summary) return null;
 
   const analysis = summary.analysis_summary;
@@ -51,10 +56,31 @@ export default function CsvAnalyticsCharts({ summary }) {
       {/* Top Row: 2 Key Visual Charts */}
       <div className="charts-grid">
         {/* Chart 1: Successful vs Failed */}
-        <div className="chart-card">
+        <motion.div
+          role="button"
+          tabIndex={0}
+          aria-expanded={expandedChart === 'outcome'}
+          onClick={() => setExpandedChart(expandedChart === 'outcome' ? null : 'outcome')}
+          className={`chart-card ios-expandable-card ${expandedChart === 'outcome' ? 'is-expanded' : ''}`}
+          style={{ cursor: 'pointer' }}
+          title={`Click to ${expandedChart === 'outcome' ? 'collapse' : 'expand'} chart breakdown`}
+          transition={springs.soft}
+        >
           <div className="chart-header">
-            <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
               <div className="chart-title">Successful vs. Failed Events</div>
+              {expandedChart === 'outcome' && (
+                <button
+                  type="button"
+                  className="ios-collapse-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExpandedChart(null);
+                  }}
+                >
+                  ✕ Collapse
+                </button>
+              )}
             </div>
           </div>
           <div
@@ -98,13 +124,65 @@ export default function CsvAnalyticsCharts({ summary }) {
               </div>
             </div>
           </div>
-        </div>
+
+          <AnimatePresence>
+            {expandedChart === 'outcome' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={springs.soft}
+                className="ios-expand-detail-panel"
+                style={{ marginTop: '14px', borderTop: '1px solid var(--border-light)', paddingTop: '10px' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="ios-meta-grid">
+                  <div className="ios-meta-item">
+                    <span className="ios-meta-label">Total Logged</span>
+                    <span className="ios-meta-value">{totalEvents.toLocaleString()} authentications</span>
+                  </div>
+                  <div className="ios-meta-item">
+                    <span className="ios-meta-label">Pass Rate</span>
+                    <span className="ios-meta-value" style={{ color: '#10b981' }}>{successPct}% Authorized</span>
+                  </div>
+                  <div className="ios-meta-item">
+                    <span className="ios-meta-label">Failure Spike Potential</span>
+                    <span className="ios-meta-value" style={{ color: failurePct > 10 ? '#ef4444' : 'inherit' }}>
+                      {failurePct > 10 ? 'High Risk' : 'Normal Range'}
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
         {/* Chart 2: Risk Level Distribution */}
-        <div className="chart-card">
+        <motion.div
+          role="button"
+          tabIndex={0}
+          aria-expanded={expandedChart === 'risk'}
+          onClick={() => setExpandedChart(expandedChart === 'risk' ? null : 'risk')}
+          className={`chart-card ios-expandable-card ${expandedChart === 'risk' ? 'is-expanded' : ''}`}
+          style={{ cursor: 'pointer' }}
+          title={`Click to ${expandedChart === 'risk' ? 'collapse' : 'expand'} risk band details`}
+          transition={springs.soft}
+        >
           <div className="chart-header">
-            <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
               <div className="chart-title">Risk Level Distribution</div>
+              {expandedChart === 'risk' && (
+                <button
+                  type="button"
+                  className="ios-collapse-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExpandedChart(null);
+                  }}
+                >
+                  ✕ Collapse
+                </button>
+              )}
             </div>
           </div>
           <div className="chart-body" style={{ minHeight: '220px' }}>
@@ -121,14 +199,64 @@ export default function CsvAnalyticsCharts({ summary }) {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+
+          <AnimatePresence>
+            {expandedChart === 'risk' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={springs.soft}
+                className="ios-expand-detail-panel"
+                style={{ marginTop: '14px', borderTop: '1px solid var(--border-light)', paddingTop: '10px' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="ios-meta-grid">
+                  <div className="ios-meta-item">
+                    <span className="ios-meta-label">Low Risk Safe</span>
+                    <span className="ios-meta-value" style={{ color: '#10b981' }}>{lowCount} events</span>
+                  </div>
+                  <div className="ios-meta-item">
+                    <span className="ios-meta-label">Medium Anomaly</span>
+                    <span className="ios-meta-value" style={{ color: '#f59e0b' }}>{mediumCount} events</span>
+                  </div>
+                  <div className="ios-meta-item">
+                    <span className="ios-meta-label">High / Critical Threat</span>
+                    <span className="ios-meta-value" style={{ color: '#dc2626' }}>{highCount + criticalCount} events</span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
 
       {/* Full-width Row: Events Over Time */}
-      <div className="chart-card" style={{ width: '100%' }}>
+      <motion.div
+        role="button"
+        tabIndex={0}
+        aria-expanded={expandedChart === 'timeline'}
+        onClick={() => setExpandedChart(expandedChart === 'timeline' ? null : 'timeline')}
+        className={`chart-card ios-expandable-card ${expandedChart === 'timeline' ? 'is-expanded' : ''}`}
+        style={{ width: '100%', cursor: 'pointer' }}
+        title={`Click to ${expandedChart === 'timeline' ? 'collapse' : 'expand'} temporal details`}
+        transition={springs.soft}
+      >
         <div className="chart-header">
-          <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
             <div className="chart-title">Events Over Time</div>
+            {expandedChart === 'timeline' && (
+              <button
+                type="button"
+                className="ios-collapse-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setExpandedChart(null);
+                }}
+              >
+                ✕ Collapse
+              </button>
+            )}
           </div>
         </div>
         <div className="chart-body" style={{ height: '260px', minHeight: '260px' }}>
@@ -183,7 +311,36 @@ export default function CsvAnalyticsCharts({ summary }) {
             </div>
           )}
         </div>
-      </div>
+
+        <AnimatePresence>
+          {expandedChart === 'timeline' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={springs.soft}
+              className="ios-expand-detail-panel"
+              style={{ marginTop: '14px', borderTop: '1px solid var(--border-light)', paddingTop: '10px' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="ios-meta-grid">
+                <div className="ios-meta-item">
+                  <span className="ios-meta-label">Time Slices</span>
+                  <span className="ios-meta-value">{timelineData.length} observation buckets</span>
+                </div>
+                <div className="ios-meta-item">
+                  <span className="ios-meta-label">Temporal Density</span>
+                  <span className="ios-meta-value">Continuous Hourly Telemetry</span>
+                </div>
+                <div className="ios-meta-item">
+                  <span className="ios-meta-label">Interpolation</span>
+                  <span className="ios-meta-value">Monotone Bezier Spline</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }

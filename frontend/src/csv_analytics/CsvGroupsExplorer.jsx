@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { BACKEND_URL } from '../useAuthSentinel';
+import { motion, AnimatePresence } from 'motion/react';
+import { BACKEND_URL, parseUtc } from '../useAuthSentinel';
+import { springs } from '../motion';
 import CustomSelect from '../components/CustomSelect';
 import CsvGroupDetailsModal from './CsvGroupDetailsModal';
 
@@ -19,6 +21,9 @@ export default function CsvGroupsExplorer({ importId }) {
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGroup, setSelectedGroup] = useState(null);
+  const [expandedGroupName, setExpandedGroupName] = useState(null);
+  const [groupRecords, setGroupRecords] = useState({});
+  const [loadingRecords, setLoadingRecords] = useState(false);
 
   const fetchGroups = useCallback(async (dimension) => {
     setIsLoading(true);
@@ -40,7 +45,41 @@ export default function CsvGroupsExplorer({ importId }) {
 
   useEffect(() => {
     fetchGroups(selectedDimension);
+    setExpandedGroupName(null);
   }, [fetchGroups, selectedDimension]);
+
+  const handleRowClick = async (grp) => {
+    if (expandedGroupName === grp.group_name) {
+      setExpandedGroupName(null);
+      return;
+    }
+    setExpandedGroupName(grp.group_name);
+    if (!groupRecords[grp.group_name]) {
+      setLoadingRecords(true);
+      try {
+        let url = `${BACKEND_URL}/api/csv/records?search=${encodeURIComponent(grp.group_name)}&limit=5`;
+        if (importId) url += `&import_id=${importId}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          setGroupRecords((prev) => ({ ...prev, [grp.group_name]: data.records || [] }));
+        }
+      } catch (e) {
+        console.warn('Failed to load group history:', e);
+      } finally {
+        setLoadingRecords(false);
+      }
+    }
+  };
+
+  const fmtTime = (ts) => {
+    if (!ts) return '—';
+    try {
+      return parseUtc(ts).toLocaleTimeString('en-GB', { hour12: false });
+    } catch {
+      return ts;
+    }
+  };
 
   const filteredGroups = groups.filter((g) =>
     (g.group_name || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -138,41 +177,207 @@ export default function CsvGroupsExplorer({ importId }) {
                 </td>
               </tr>
             ) : (
-              filteredGroups.map((grp, idx) => {
+              filteredGroups.map((grp) => {
                 const normalizedRisk = grp.risk_level === 'NORMAL' ? 'LOW' : (grp.risk_level || 'LOW');
+                const isExpanded = expandedGroupName === grp.group_name;
+                const totalEvents = (grp.failed_events || 0) + (grp.successful_events || 0) || 1;
+                const failPct = Math.round(((grp.failed_events || 0) / totalEvents) * 100);
+                const succPct = Math.round(((grp.successful_events || 0) / totalEvents) * 100);
+                const records = groupRecords[grp.group_name] || [];
+
                 return (
-                  <tr
-                    key={grp.group_name}
-                    style={{
-                      animation: 'iosFadeInUp var(--ios-duration-smooth) var(--ios-ease) both',
-                      animationDelay: `${Math.min(idx * 25, 250)}ms`,
-                    }}
-                  >
-                    <td style={{ fontWeight: 600, fontFamily: selectedDimension === 'ip' ? 'var(--font-mono)' : 'inherit' }}>
-                      {grp.group_name}
-                    </td>
-                    <td style={{ color: grp.failed_events > 0 ? '#ef4444' : 'inherit', fontWeight: grp.failed_events > 0 ? 600 : 400 }}>
-                      {grp.failed_events}
-                    </td>
-                    <td style={{ color: '#10b981', fontWeight: grp.successful_events > 0 ? 500 : 400 }}>
-                      {grp.successful_events}
-                    </td>
-                    <td>
-                      <span className={`severity-pill ${normalizedRisk}`}>
-                        {normalizedRisk}
-                      </span>
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        style={{ padding: '4px 12px', fontSize: '12px' }}
-                        onClick={() => setSelectedGroup(grp)}
-                      >
-                        View Details
-                      </button>
-                    </td>
-                  </tr>
+                  <tbody key={grp.group_name} style={{ display: 'contents' }}>
+                    <tr
+                      role="button"
+                      tabIndex={0}
+                      aria-expanded={isExpanded}
+                      onClick={() => handleRowClick(grp)}
+                      className={`ios-expandable-row ${isExpanded ? 'is-expanded' : ''}`}
+                      style={{
+                        cursor: 'pointer',
+                        backgroundColor: isExpanded ? 'rgba(0, 102, 255, 0.055)' : undefined,
+                        boxShadow: isExpanded ? 'inset 3px 0 0 var(--accent)' : undefined,
+                      }}
+                      title={`Click to ${isExpanded ? 'collapse' : 'expand'} ${grp.group_name} analytics`}
+                    >
+                      <td style={{ fontWeight: 600, fontFamily: selectedDimension === 'ip' ? 'var(--font-mono)' : 'inherit' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ transform: isExpanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s ease', color: 'var(--accent)', fontSize: '11px', display: 'inline-block' }}>
+                            ▶
+                          </span>
+                          <span style={{ color: isExpanded ? 'var(--accent)' : 'inherit' }}>{grp.group_name}</span>
+                        </div>
+                      </td>
+                      <td style={{ color: grp.failed_events > 0 ? '#ef4444' : 'inherit', fontWeight: grp.failed_events > 0 ? 600 : 400 }}>
+                        {grp.failed_events}
+                      </td>
+                      <td style={{ color: '#10b981', fontWeight: grp.successful_events > 0 ? 500 : 400 }}>
+                        {grp.successful_events}
+                      </td>
+                      <td>
+                        <span className={`severity-pill ${normalizedRisk}`}>
+                          {normalizedRisk}
+                        </span>
+                      </td>
+                      <td onClick={(e) => e.stopPropagation()}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            style={{ padding: '4px 10px', fontSize: '12px' }}
+                            onClick={() => setSelectedGroup(grp)}
+                          >
+                            Modal Dossier
+                          </button>
+                          <button
+                            type="button"
+                            className="ios-collapse-btn"
+                            style={{ padding: '3px 8px', fontSize: '11px' }}
+                            onClick={() => handleRowClick(grp)}
+                          >
+                            {isExpanded ? '✕ Close' : 'Expand ▾'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Smooth Expandable Row Detail Drawer */}
+                    {isExpanded && (
+                      <tr className="ios-row-detail-container">
+                        <td colSpan="5" style={{ padding: 0 }}>
+                          <AnimatePresence>
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={springs.soft}
+                              className="ios-row-detail-content"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {/* Header */}
+                              <div className="ios-expand-header-action">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <span className="ios-expand-title" style={{ fontSize: '14px' }}>
+                                    {selectedDimension === 'user' ? 'User Profile & Anomaly Dossier:' : 'Dimension Analysis:'} <strong>{grp.group_name}</strong>
+                                  </span>
+                                  <span className={`ios-badge-pill ${normalizedRisk.toLowerCase()}`}>
+                                    {normalizedRisk} RISK
+                                  </span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <button
+                                    type="button"
+                                    className="btn-secondary"
+                                    style={{ padding: '3px 10px', fontSize: '11px', borderRadius: '6px' }}
+                                    onClick={() => setSelectedGroup(grp)}
+                                  >
+                                    View Full Dossier Modal ↗
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="ios-collapse-btn"
+                                    onClick={() => setExpandedGroupName(null)}
+                                  >
+                                    ✕ Collapse
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Telemetry Breakdown Cards */}
+                              <div className="ios-meta-grid">
+                                <div className="ios-meta-item">
+                                  <span className="ios-meta-label">Total Correlated Events</span>
+                                  <span className="ios-meta-value">{totalEvents}</span>
+                                </div>
+                                <div className="ios-meta-item">
+                                  <span className="ios-meta-label">Authentication Failures</span>
+                                  <span className="ios-meta-value" style={{ color: grp.failed_events > 0 ? '#ef4444' : 'inherit' }}>
+                                    {grp.failed_events || 0} ({failPct}%)
+                                  </span>
+                                </div>
+                                <div className="ios-meta-item">
+                                  <span className="ios-meta-label">Authorized Successes</span>
+                                  <span className="ios-meta-value" style={{ color: '#10b981' }}>
+                                    {grp.successful_events || 0} ({succPct}%)
+                                  </span>
+                                </div>
+                                <div className="ios-meta-item">
+                                  <span className="ios-meta-label">Risk Band</span>
+                                  <span className="ios-meta-value" style={{ color: normalizedRisk === 'CRITICAL' ? '#dc2626' : normalizedRisk === 'HIGH' ? '#ea580c' : '#10b981' }}>
+                                    {normalizedRisk}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Ratio Visual Bar */}
+                              <div style={{ marginTop: '4px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                                  <span>Success vs Failure Ratio</span>
+                                  <span>{succPct}% Success / {failPct}% Failure</span>
+                                </div>
+                                <div style={{ height: '7px', background: '#fee2e2', borderRadius: '999px', overflow: 'hidden', display: 'flex' }}>
+                                  <div style={{ width: `${succPct}%`, background: '#10b981', transition: 'width 0.4s ease' }} />
+                                  <div style={{ width: `${failPct}%`, background: '#ef4444', transition: 'width 0.4s ease' }} />
+                                </div>
+                              </div>
+
+                              {/* Related Event History Section */}
+                              <div style={{ marginTop: '10px' }}>
+                                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                                  Recent Correlated Event History
+                                </div>
+                                {loadingRecords ? (
+                                  <div style={{ padding: '12px', fontSize: '12px', color: 'var(--text-tertiary)', textAlign: 'center' }}>
+                                    Loading related audit logs...
+                                  </div>
+                                ) : records.length === 0 ? (
+                                  <div style={{ padding: '8px 12px', fontSize: '12px', color: 'var(--text-tertiary)', background: 'var(--bg-secondary)', borderRadius: '6px' }}>
+                                    No granular log lines recorded for this dimension.
+                                  </div>
+                                ) : (
+                                  <div style={{ overflowX: 'auto' }}>
+                                    <table style={{ width: '100%', fontSize: '11.5px', borderCollapse: 'collapse' }}>
+                                      <thead>
+                                        <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-secondary)', textAlign: 'left' }}>
+                                          <th style={{ padding: '5px 8px' }}>Time</th>
+                                          <th style={{ padding: '5px 8px' }}>Source IP</th>
+                                          <th style={{ padding: '5px 8px' }}>Event Type</th>
+                                          <th style={{ padding: '5px 8px' }}>Status</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {records.map((r, rIdx) => (
+                                          <tr key={r.id || r.row_number || rIdx} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
+                                            <td style={{ padding: '5px 8px', fontVariantNumeric: 'tabular-nums' }}>{fmtTime(r.timestamp)}</td>
+                                            <td style={{ padding: '5px 8px', fontFamily: 'var(--font-mono)' }}>{r.ip || '—'}</td>
+                                            <td style={{ padding: '5px 8px' }}>{r.event_type || 'LOGIN'}</td>
+                                            <td style={{ padding: '5px 8px' }}>
+                                              <span
+                                                style={{
+                                                  padding: '2px 7px',
+                                                  borderRadius: '4px',
+                                                  fontSize: '10.5px',
+                                                  fontWeight: 700,
+                                                  background: r.status === 'SUCCESS' ? '#ecfdf5' : '#fee2e2',
+                                                  color: r.status === 'SUCCESS' ? '#059669' : '#dc2626',
+                                                }}
+                                              >
+                                                {r.status}
+                                              </span>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
+                          </AnimatePresence>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
                 );
               })
             )}

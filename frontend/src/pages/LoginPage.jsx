@@ -103,17 +103,16 @@ export default function LoginPage({ onLogin }) {
   return (
     <div className="login-split-page">
       {/* ─────────────────────────────────────────────────────────────
-          1. Left Panel — TAVIX GUARD Branding (47% width)
+          1. Left Panel — TAVIX GUARD Branding (~50% width)
           ───────────────────────────────────────────────────────────── */}
       <div className="login-brand-panel">
-        {/* Ambient cyber grid and background glow */}
-        <div className="brand-cyber-grid" />
+        {/* Subtle cyber background ambience */}
         <div className="brand-glow-sphere" />
         <div className="brand-radial-overlay" />
 
-        {/* Top-Center Branding Content */}
-        <div className="brand-top-section">
-          {/* Prominent Shield Logo */}
+        {/* Centered Compact Branding Group */}
+        <div className="brand-group">
+          {/* 1. TAVIX GUARD Shield Logo */}
           <motion.div
             className="brand-logo-container"
             initial={{ opacity: 0, scale: 0.88 }}
@@ -124,10 +123,10 @@ export default function LoginPage({ onLogin }) {
             <img src={tavixLogo} alt="TAVIX GUARD Shield" className="brand-shield-logo" />
           </motion.div>
 
-          {/* Heading: TAVIX in white, GUARD in electric blue */}
+          {/* 2. Heading, 3. Subtitle, 4. Cyan Line, 5. Description */}
           <motion.div
             className="brand-text-block"
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
           >
@@ -136,7 +135,7 @@ export default function LoginPage({ onLogin }) {
               <span className="brand-title-guard">GUARD</span>
             </h1>
 
-            <p className="brand-subtitle">Intelligent Security Monitoring</p>
+            <p className="brand-subtitle">INTELLIGENT SECURITY MONITORING</p>
 
             <div className="brand-cyan-divider" />
 
@@ -145,144 +144,24 @@ export default function LoginPage({ onLogin }) {
             </p>
           </motion.div>
         </div>
-
-        {/* Luminous Digital Globe & Network Topology at the Bottom */}
-        <div className="brand-bottom-section">
-          {/* SVG Digital Globe Visualization with glowing nodes & orbits */}
-          <div className="digital-globe-wrapper">
-            <svg
-              className="digital-globe-svg"
-              viewBox="0 0 640 340"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <defs>
-                <radialGradient id="globeCoreGlow" cx="50%" cy="85%" r="65%">
-                  <stop offset="0%" stopColor="#00D4FF" stopOpacity="0.32" />
-                  <stop offset="50%" stopColor="#168BFF" stopOpacity="0.16" />
-                  <stop offset="100%" stopColor="#06152E" stopOpacity="0" />
-                </radialGradient>
-
-                <linearGradient id="cyanArcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#168BFF" stopOpacity="0.1" />
-                  <stop offset="50%" stopColor="#00D4FF" stopOpacity="0.85" />
-                  <stop offset="100%" stopColor="#168BFF" stopOpacity="0.1" />
-                </linearGradient>
-
-                <linearGradient id="purpleArcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#00D4FF" stopOpacity="0.7" />
-                  <stop offset="100%" stopColor="#713CFF" stopOpacity="0.4" />
-                </linearGradient>
-
-                <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="3.5" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-
-              {/* Globe Core Glow */}
-              <ellipse cx="320" cy="270" rx="280" ry="140" fill="url(#globeCoreGlow)" />
-
-              {/* Wireframe Longitude & Latitude Arcs */}
-              <ellipse cx="320" cy="265" rx="260" ry="110" stroke="url(#cyanArcGrad)" strokeWidth="1.2" opacity="0.65" strokeDasharray="5 5" />
-              <ellipse cx="320" cy="265" rx="220" ry="85" stroke="url(#cyanArcGrad)" strokeWidth="1.4" opacity="0.8" />
-              <ellipse cx="320" cy="265" rx="170" ry="60" stroke="#00D4FF" strokeWidth="1" opacity="0.5" strokeDasharray="3 3" />
-              <ellipse cx="320" cy="265" rx="110" ry="38" stroke="url(#purpleArcGrad)" strokeWidth="1" opacity="0.7" />
-
-              {/* Curved Meridian Paths */}
-              <path d="M 80 265 C 120 150, 520 150, 560 265" stroke="url(#cyanArcGrad)" strokeWidth="1.2" opacity="0.6" fill="none" />
-              <path d="M 140 265 C 180 180, 460 180, 500 265" stroke="#168BFF" strokeWidth="1.1" opacity="0.5" fill="none" />
-              <path d="M 210 265 C 240 205, 400 205, 430 265" stroke="#00D4FF" strokeWidth="1.2" opacity="0.75" fill="none" />
-              <path d="M 320 130 L 320 330" stroke="#00D4FF" strokeWidth="1.2" opacity="0.45" strokeDasharray="4 4" />
-              <path d="M 60 265 L 580 265" stroke="#168BFF" strokeWidth="1" opacity="0.4" />
-
-              {/* Connected Cyber Network Lines & Nodes */}
-              <line x1="170" y1="210" x2="250" y2="185" stroke="#00D4FF" strokeWidth="1" opacity="0.7" />
-              <line x1="250" y1="185" x2="320" y2="215" stroke="#00D4FF" strokeWidth="1.2" opacity="0.85" />
-              <line x1="320" y1="215" x2="390" y2="180" stroke="#00D4FF" strokeWidth="1" opacity="0.7" />
-              <line x1="390" y1="180" x2="470" y2="210" stroke="#00D4FF" strokeWidth="1.2" opacity="0.75" />
-              <line x1="250" y1="185" x2="320" y2="150" stroke="#713CFF" strokeWidth="1" opacity="0.55" strokeDasharray="3 3" />
-              <line x1="320" y1="150" x2="390" y2="180" stroke="#713CFF" strokeWidth="1" opacity="0.55" strokeDasharray="3 3" />
-
-              {/* Glowing Constellation Nodes */}
-              <circle cx="170" cy="210" r="3.5" fill="#00D4FF" filter="url(#neonGlow)" />
-              <circle cx="250" cy="185" r="4.5" fill="#00D4FF" filter="url(#neonGlow)" />
-              <circle cx="320" cy="215" r="5" fill="#ffffff" stroke="#00D4FF" strokeWidth="2" filter="url(#neonGlow)" />
-              <circle cx="390" cy="180" r="4.5" fill="#00D4FF" filter="url(#neonGlow)" />
-              <circle cx="470" cy="210" r="3.5" fill="#00D4FF" filter="url(#neonGlow)" />
-              <circle cx="320" cy="150" r="3" fill="#713CFF" filter="url(#neonGlow)" />
-              <circle cx="210" cy="245" r="3" fill="#168BFF" />
-              <circle cx="430" cy="245" r="3" fill="#168BFF" />
-              <circle cx="290" cy="275" r="2.5" fill="#00D4FF" opacity="0.8" />
-              <circle cx="350" cy="275" r="2.5" fill="#00D4FF" opacity="0.8" />
-            </svg>
-
-            {/* Floating Glassmorphism Cyber Badges with small outlined security icons */}
-            <div className="floating-badge badge-lock">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00D4FF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-              <span>AES-256</span>
-            </div>
-
-            <div className="floating-badge badge-shield">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00D4FF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                <path d="m9 12 2 2 4-4" />
-              </svg>
-              <span>Threat Shield</span>
-            </div>
-
-            <div className="floating-badge badge-server">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00D4FF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-                <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-                <line x1="6" y1="6" x2="6.01" y2="6" />
-                <line x1="6" y1="18" x2="6.01" y2="18" />
-              </svg>
-              <span>SOC Online</span>
-            </div>
-
-            <div className="floating-badge badge-monitor">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00D4FF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="3" width="20" height="14" rx="2" />
-                <line x1="8" y1="21" x2="16" y2="21" />
-                <line x1="12" y1="17" x2="12" y2="21" />
-                <polyline points="7 10 10 13 13 8 17 11" />
-              </svg>
-              <span>Real-Time</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          2. Right Panel — Authentication UI (53% width)
+          2. Right Panel — Authentication UI (~50% width)
           ───────────────────────────────────────────────────────────── */}
       <div className="login-auth-panel">
         <motion.div
           className="auth-card"
-          initial={{ opacity: 0, y: 18 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         >
-          {/* Card Top: Smaller Shield Logo */}
-          <div className="auth-card-logo-wrap">
-            <img src={tavixLogo} alt="TAVIX GUARD" className="auth-card-logo" />
-          </div>
-
-          {/* Card Heading */}
+          {/* Card Heading — Shield logo & subtitle removed */}
           <div className="auth-card-header">
             <h2 className="auth-card-title">
               <span className="title-welcome">Welcome to </span>
               <span className="title-brand">TAVIX GUARD</span>
             </h2>
-            <p className="auth-card-subtitle">Sign in to access your security dashboard.</p>
           </div>
 
           {/* Success State View */}
@@ -438,24 +317,6 @@ export default function LoginPage({ onLogin }) {
                 </svg>
                 <span>Sign in with Admin Authentication</span>
               </button>
-
-              {/* Security Footer Note */}
-              <div className="auth-security-footer">
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-                <span>Secure access for authorized administrators only.</span>
-              </div>
             </form>
           )}
         </motion.div>

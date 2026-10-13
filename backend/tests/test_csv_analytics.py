@@ -198,6 +198,7 @@ def test_csv_upload_and_analysis_service():
 2026-10-07 10:06:00,charlie,192.168.1.30,login,success,India
 """.encode("utf-8")
 
+    init_db()
     db = SessionLocal()
     try:
         data = CsvAnalyticsService.process_csv_upload(
