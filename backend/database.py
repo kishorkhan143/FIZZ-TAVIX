@@ -108,6 +108,23 @@ def init_db() -> None:
             connection.execute(text("ALTER TABLE users ADD COLUMN name VARCHAR(256)"))
         except Exception:
             pass
+
+        ml_cols = [
+            "ALTER TABLE csv_alerts ADD COLUMN source VARCHAR(16) DEFAULT 'RULE'",
+            "ALTER TABLE csv_alerts ADD COLUMN ml_prediction VARCHAR(64)",
+            "ALTER TABLE csv_alerts ADD COLUMN ml_risk REAL",
+            "ALTER TABLE csv_alerts ADD COLUMN ml_confidence REAL",
+            "ALTER TABLE csv_alerts ADD COLUMN ml_review_label TEXT",
+            "ALTER TABLE csv_alerts ADD COLUMN suggested_step TEXT",
+            "ALTER TABLE csv_alerts ADD COLUMN class_probabilities TEXT",
+            "ALTER TABLE csv_alerts ADD COLUMN evidence TEXT",
+            "ALTER TABLE csv_alerts ADD COLUMN anomaly_score REAL",
+        ]
+        for ddl in ml_cols:
+            try:
+                connection.execute(text(ddl))
+            except Exception:
+                pass
         try:
             connection.execute(text("ALTER TABLE users ADD COLUMN last_login_at TIMESTAMP"))
         except Exception:

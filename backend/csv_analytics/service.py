@@ -192,6 +192,77 @@ class CsvAnalyticsService:
 
         # 7. Security Alert Detection (Rules 1 to 10)
         alerts_list = SecurityDetector.detect_alerts(import_id=import_id, records=valid_records)
+
+        # 7b. ML Predictor Integration (safe — never crashes the upload)
+        try:
+            from ml.predictor import predict as ml_predict
+            ml_findings = ml_predict(valid_records)
+            ml_findings = [f for f in ml_findings if f.get("prediction") != "NORMAL"]
+        except Exception as ml_err:
+            logger.warning(f"ML predictor skipped: {ml_err}")
+            ml_findings = []
+
+        if ml_findings:
+            def _overlapping(ids_a, ids_b):
+                return bool(set(ids_a) & set(ids_b))
+
+            rule_lookup = {}  # (user, ip) -> index in alerts_list
+            for idx, a in enumerate(alerts_list):
+                rule_lookup[(a["user"], a["ip"])] = idx
+
+            for finding in ml_findings:
+                f_user = finding.get("user", "")
+                f_ip = finding.get("ip", "")
+                f_ids = finding.get("event_ids", [])
+                match_idx = rule_lookup.get((f_user, f_ip))
+                if match_idx is not None and _overlapping(
+                        alerts_list[match_idx].get("related_events", []), f_ids):
+                    a = alerts_list[match_idx]
+                    a["source"] = "RULE+ML"
+                    a["ml_prediction"] = finding["prediction"]
+                    a["ml_risk"] = finding["ml_risk"]
+                    a["ml_confidence"] = finding["confidence"]
+                    a["ml_review_label"] = finding["review_label"]
+                    a["suggested_step"] = finding["suggested_human_step"]
+                    a["class_probabilities"] = finding.get("class_probabilities", {})
+                    a["evidence"] = finding.get("evidence", {})
+                    a["anomaly_score"] = finding.get("anomaly_score")
+                else:
+                    ml_alert = {
+                        "id": str(uuid.uuid4())[:8],
+                        "import_id": import_id,
+                        "alert_type": finding["prediction"],
+                        "severity": "HIGH" if (finding["ml_risk"] or 0) >= 70 else (
+                                     "MEDIUM" if (finding["ml_risk"] or 0) >= 40 else "LOW"),
+                        "risk_score": float(finding.get("ml_risk") or 0),
+                        "user": f_user,
+                        "ip": f_ip,
+                        "country": None,
+                        "message": finding.get("review_label", "Needs review"),
+                        "first_seen": finding.get("first_seen"),
+                        "last_seen": finding.get("last_seen"),
+                        "event_count": len(f_ids),
+                        "failed_count": finding.get("evidence", {}).get("failures", 0),
+                        "time_window_seconds": int(
+                            (finding["last_seen"] - finding["first_seen"]).total_seconds()
+                            if finding.get("last_seen") and finding.get("first_seen") else 0),
+                        "status": "OPEN",
+                        "reasons": [finding.get("review_label", "Needs review")],
+                        "related_events": f_ids,
+                        "source": "ML",
+                        "ml_prediction": finding["prediction"],
+                        "ml_risk": finding["ml_risk"],
+                        "ml_confidence": finding["confidence"],
+                        "ml_review_label": finding["review_label"],
+                        "suggested_step": finding["suggested_human_step"],
+                        "class_probabilities": finding.get("class_probabilities", {}),
+                        "evidence": finding.get("evidence", {}),
+                        "anomaly_score": finding.get("anomaly_score"),
+                        "created_at": datetime.now(timezone.utc),
+                    }
+                    alerts_list.append(ml_alert)
+
+        # Recompute counts to include ML-only alerts
         high_risk_alerts = [a for a in alerts_list if a["severity"] in ("CRITICAL", "HIGH")]
 
         # 8. High-Level Aggregation & Analysis Summary
@@ -320,7 +391,18 @@ class CsvAnalyticsService:
                 time_window_seconds=a["time_window_seconds"],
                 status=a["status"],
                 reasons=json.dumps(a["reasons"]),
-                related_events=json.dumps(a["related_events"]),
+                related_events=json.dumps(a.get("related_events", [])),
+                source=a.get("source", "RULE"),
+                ml_prediction=a.get("ml_prediction"),
+                ml_risk=a.get("ml_risk"),
+                ml_confidence=a.get("ml_confidence"),
+                ml_review_label=a.get("ml_review_label"),
+                suggested_step=a.get("suggested_step"),
+                class_probabilities=json.dumps(a["class_probabilities"])
+                    if a.get("class_probabilities") else None,
+                evidence=json.dumps(a["evidence"])
+                    if a.get("evidence") else None,
+                anomaly_score=a.get("anomaly_score"),
                 created_at=a["created_at"],
             )
             for a in alerts_list
@@ -490,8 +572,9 @@ class CsvAnalyticsService:
         severity: Optional[str],
         status: Optional[str],
         db: Session,
+        source: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
-        """Fetch alerts with optional severity and status filters."""
+        """Fetch alerts with optional severity, status, and source filters."""
         stmt = select(CsvAlert)
         if import_id:
             stmt = stmt.where(CsvAlert.import_id == import_id)
@@ -507,6 +590,14 @@ class CsvAnalyticsService:
 
         if status and status.upper() != "ALL":
             stmt = stmt.where(CsvAlert.status == status.upper())
+
+        if source and source.lower() not in ("all", ""):
+            if source.lower() == "rule":
+                stmt = stmt.where(CsvAlert.source == "RULE")
+            elif source.lower() == "ml":
+                stmt = stmt.where(CsvAlert.source.in_(["ML", "RULE+ML"]))
+            elif source.lower() == "both":
+                stmt = stmt.where(CsvAlert.source == "RULE+ML")
 
         stmt = stmt.order_by(desc(CsvAlert.risk_score), desc(CsvAlert.created_at))
         alerts = db.execute(stmt).scalars().all()
